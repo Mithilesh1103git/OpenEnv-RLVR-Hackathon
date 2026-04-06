@@ -13,6 +13,7 @@ Perfect for testing HTTP server infrastructure.
 
 from uuid import uuid4
 from typing import Any, Optional
+import xml.etree.ElementTree as ET
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
@@ -21,6 +22,11 @@ try:
     from ..models import EdupilotAction, EdupilotObservation
 except ImportError:
     from models import EdupilotAction, EdupilotObservation
+
+try:
+    from .reward_collection import parse_llm_response, reward_collection
+except ImportError:
+    from server.reward_collection import parse_llm_response, reward_collection
 
 
 class EdupilotEnvironment(Environment):
@@ -72,73 +78,6 @@ class EdupilotEnvironment(Environment):
             reward=0.0,
         )
 
-    def parse_llm_response(self, message: str):
-        parsed_msg_dict = {
-            "brand_name": {
-                "enclosures": False,
-                "value": False
-            },
-            "greetings": {
-                "enclosures": False,
-                "value": False
-            },
-            "main_details": {
-                "enclosures": False,
-                "value": False
-            },
-            "extra_details": {
-                "enclosures": False,
-                "value": False
-            }
-        }
-
-        for msg_part in message.split("<br>"):
-            if "<brand name>" and "</brand name>" in msg_part:
-                parsed_msg_dict["brand_name"]["enclosures"] = True
-                if "Masai School" in msg_part:
-                    parsed_msg_dict["brand_name"]["value"] = True
-            elif "<greetings>" and "</greetings>" in msg_part:
-                parsed_msg_dict["greetings"]["enclosures"] = True
-                if "Dear " in msg_part:
-                    parsed_msg_dict["greetings"]["value"] = True
-            elif "<main-details>" and "</main-details>" in msg_part:
-                parsed_msg_dict["main_details"]["enclosures"] = True
-                if ("📘 Assignment Title: " in msg_part and "🗓 Deadline: " in msg_part and "🔗 LMS Link: " in msg_part):
-                    parsed_msg_dict["main_details"]["value"] = True
-            elif "<extra-details>" and "</extra-details>" in msg_part:
-                parsed_msg_dict["extra_details"]["enclosures"] = True
-                if ("associated lecture: " in msg_part and "Youtube link: " in msg_part):
-                    parsed_msg_dict["extra_details"]["value"] = True
-
-        print(f"parsed_msg_dict: {parsed_msg_dict}")
-        return parsed_msg_dict
-
-    def reward_collection(self, parsed_msg_dict: dict):
-        rewards_collected = []
-        observations = []
-        parsed_elements = ["brand_name", "greetings", "main_details", "extra_details"]
-
-        for key in parsed_elements:
-            if parsed_msg_dict[key]["enclosures"]:
-                enclosure_reward = 5
-                rewards_collected.append(enclosure_reward)
-                observations.append(f"Element '{key}_enclosures' found in message, therefore reward of {enclosure_reward} was given.")
-            else:
-                default_reward = 0.5
-                rewards_collected.append(default_reward)
-                observations.append(f"Required '{key}_enclosures' was not found in message, therefore default reward of {default_reward} was given.")
-
-            if parsed_msg_dict[key]["value"]:
-                value_reward = 10
-                rewards_collected.append(value_reward)
-                observations.append(f"Element '{key}_value' found in message, therefore reward of {value_reward} was given.")
-            else:
-                default_reward = 0.5
-                rewards_collected.append(default_reward)
-                observations.append(f"Required '{key}_value' was not found in message, therefore default reward of {default_reward} was given.")
-
-        return rewards_collected, observations
-
     def step(self, action: EdupilotAction) -> EdupilotObservation:  # type: ignore[override]
         """
         Execute a step in the environment by echoing the message.
@@ -155,10 +94,17 @@ class EdupilotEnvironment(Environment):
         length = len(message)
 
         # Simple reward: longer messages get higher rewards
-        # reward = length * 0.1
-        parsed_msg_dict = self.parse_llm_response(message)
-        rewards_collected, observations = self.reward_collection(parsed_msg_dict)
+        parsed_dict = {}
+        try:
+            try:
+                parsed_xml_data = ET.fromstring(message)
+                parsed_dict = parse_llm_response(parsed_xml_data)
+            except ParseError:
+                print("ParseError: Invalid XML")
+        except NameError:
+            print("NameError: Invalid XML")
 
+        rewards_collected, observations = reward_collection(parsed_dict)
         final_reward = sum(rewards_collected)
 
         return EdupilotObservation(
