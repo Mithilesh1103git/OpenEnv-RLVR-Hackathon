@@ -1,17 +1,22 @@
 import os
 
 import requests
+import dotenv
 from dotenv import load_dotenv
 
+
+env_file_path = r"EduPilot\.env"
 try:
-    env = load_dotenv(r"EduPilot\.env")
+    env = dotenv.dotenv_values(env_file_path)
+    brand_name_env_var = env.get("brand_name")
+    lms_link_env_var = env.get("lms_link")
 except:
-    pass
+    env = load_dotenv(env_file_path)
+    brand_name_env_var = os.environ["brand_name"]
+    lms_link_env_var = os.environ["lms_link"]
 
 
 def parse_llm_response(message: str):
-    brand_name_env_var = os.environ["brand_name"]
-    lms_link_env_var = os.environ["lms_link"]
 
     data_validation = {}
 
