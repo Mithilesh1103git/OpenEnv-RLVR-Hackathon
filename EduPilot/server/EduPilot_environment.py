@@ -13,7 +13,7 @@ Perfect for testing HTTP server infrastructure.
 
 from uuid import uuid4
 from typing import Any, Optional
-import xml.etree.ElementTree as ET
+import json
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
@@ -95,16 +95,11 @@ class EdupilotEnvironment(Environment):
 
         # Simple reward: longer messages get higher rewards
         parsed_dict = {}
-        # try:
-        try:
-            print(message)
-            parsed_xml_data = ET.fromstring(str(message))
-            parsed_dict = parse_llm_response(parsed_xml_data)
-        except ParseError:
-            print("ParseError: Invalid XML")
-        # except NameError:
-        #     print("NameError: Invalid XML")
-
+        if isinstance(message, str):
+            message_dict = json.loads(message)
+            # print(f"message: {message}")
+            parsed_dict = parse_llm_response(message_dict)
+        # print(f"parsed_msg_dict: {parsed_dict}")
         rewards_collected, observations = reward_collection(parsed_dict)
         final_reward = sum(rewards_collected)
 

@@ -1,7 +1,5 @@
-import xml.etree.ElementTree as ET
 
 def parse_llm_response(message: str):
-
     parsed_dict = {
         "is_present": {
             "brand_name": False,
@@ -19,60 +17,66 @@ def parse_llm_response(message: str):
         "raw_values": []
     }
 
-    dict_keys = ["brand_name", "greetings", "message", "details"]
+    root_dict_node = message['notification']
+    if not root_dict_node:
+        return parsed_dict
 
-    for key in dict_keys:
-        top_element_data = message.find(key)
+    sample_dict_keys = ["brand_name", "greetings", "message", "details"]
+
+    for key in sample_dict_keys:
 
         if key=="brand_name":
-            parsed_dict["is_present"]["brand_name"] = True
-            print(top_element_data)
-            parsed_dict["raw_values"].append({"brand_name_value": top_element_data.text.strip()})
+            main_key_node = root_dict_node[key]
+            if main_key_node:
+                parsed_dict["is_present"]["brand_name"] = True
 
         if key=="greetings":
-            parsed_dict["is_present"]["greetings"] = True
-            
-            greetings_prefix = top_element_data.find('prefix')
-            if isinstance(greetings_prefix.text, str):
-                parsed_dict["is_present"]["greetings_prefix"] = True
-                parsed_dict["raw_values"].append({"greetings_prefix": greetings_prefix.text.strip()})
-            
-            greetings_username = top_element_data.find('username')
-            if isinstance(greetings_username.text, str):
-                parsed_dict["is_present"]["greetings_username"] = True
-                parsed_dict["raw_values"].append({"greetings_username": greetings_username.text.strip()})
+            main_key_node = root_dict_node[key]
+            if main_key_node:
+                parsed_dict["is_present"]["greetings"] = True
+
+                greetings_prefix = main_key_node['prefix']
+                if greetings_prefix:
+                    parsed_dict["is_present"]["greetings_prefix"] = True
+                    # parsed_dict["raw_values"].append({"greetings_prefix": greetings_prefix.text.strip()})
+                
+                greetings_prefix = main_key_node['username']
+                if greetings_prefix:
+                    parsed_dict["is_present"]["greetings_username"] = True
 
         if key=="message":
-            parsed_dict["is_present"]["message"] = True
-            parsed_dict["raw_values"].append({"message": top_element_data.text.strip()})
+            main_key_node = root_dict_node[key]
+            if main_key_node:
+                parsed_dict["is_present"]["message"] = True
 
         if key=="details":
-            parsed_dict["is_present"]["details"] = True
-            details_all = top_element_data.findall("detail")
-            
-            for detail in details_all:
-                detail_detail_category = detail.find("detail_category").text.strip()
-                detail_type = detail.find("type").text.strip()
-                detail_key = detail.find("key").text.strip()
-                detail_value = detail.find("value").text.strip()
-                
-                if detail_type=="assignment_title":
-                    parsed_dict["is_present"]["assignment_title"] = True
-                    parsed_dict["raw_values"].append({detail_key: detail_value})
-                if detail_type=="deadline":
-                    parsed_dict["is_present"]["deadline"] = True
-                    parsed_dict["raw_values"].append({detail_key: detail_value})
-                if detail_type=="lms_link":
-                    parsed_dict["is_present"]["lms_link"] = True
-                    parsed_dict["raw_values"].append({detail_key: detail_value})
-                if detail_type=="associated_lecture_link":
-                    parsed_dict["is_present"]["associated_lecture_link"] = True
-                    parsed_dict["raw_values"].append({detail_key: detail_value})
-                if detail_type=="youtube_lecture_link":
-                    parsed_dict["is_present"]["youtube_lecture_link"] = True
-                    parsed_dict["raw_values"].append({detail_key: detail_value})
+            main_key_node = root_dict_node[key]
+            if main_key_node:
+                parsed_dict["is_present"]["details"] = True
 
-    print(f"parsed_msg_dict: {parsed_dict}")
+                for detail in main_key_node:
+
+                    detail_detail_category = detail["category"]
+                    detail_type = detail["type"]
+                    detail_key = detail["label"]
+                    detail_value = detail["value"]
+                    
+                    if detail_type=="assignment_title":
+                        parsed_dict["is_present"]["assignment_title"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                    if detail_type=="deadline":
+                        parsed_dict["is_present"]["deadline"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                    if detail_type=="lms_link":
+                        parsed_dict["is_present"]["lms_link"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                    if detail_type=="associated_lecture_link":
+                        parsed_dict["is_present"]["associated_lecture_link"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                    if detail_type=="youtube_lecture_link":
+                        parsed_dict["is_present"]["youtube_lecture_link"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+
     return parsed_dict
 
 def reward_collection(parsed_dict: dict):
