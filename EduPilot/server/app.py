@@ -28,9 +28,6 @@ Usage:
     python -m server.app
 """
 
-import os
-from dotenv import load_dotenv
-
 from openenv.core.env_server.interfaces import Environment
 
 try:
@@ -48,11 +45,6 @@ except ImportError:
     from models import EdupilotAction, EdupilotObservation
     from server.EduPilot_environment import EdupilotEnvironment
 
-
-try:
-    env = load_dotenv(r"EduPilot\.env")
-except:
-    pass
 
 # Create the app with web interface and README integration
 app = create_app(

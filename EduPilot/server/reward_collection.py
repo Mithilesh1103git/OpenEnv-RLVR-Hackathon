@@ -1,9 +1,15 @@
 import os
 import requests
+from dotenv import load_dotenv
+
+try:
+    env = load_dotenv(r"EduPilot\.env")
+except:
+    pass
 
 def parse_llm_response(message: str):
-    brand_name_env_var="Masai School"
-    lms_link_env_var="https://students.masaischool.com/assignments/76143"
+    brand_name_env_var = os.environ["brand_name"]
+    lms_link_env_var = os.environ["lms_link"]
     
     data_validation = {}
 
