@@ -14,6 +14,8 @@ Perfect for testing HTTP server infrastructure.
 from uuid import uuid4
 from typing import Any, Optional
 import json
+import jsonschema
+from jsonschema import Draft7Validator
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
@@ -93,18 +95,30 @@ class EdupilotEnvironment(Environment):
         message = action.message
         length = len(message)
 
-        # Simple reward: longer messages get higher rewards
-        parsed_dict = {}
-        if isinstance(message, str):
-            message_dict = json.loads(message)
-            # print(f"message: {message}")
-            parsed_dict = parse_llm_response(message_dict)
-        # print(f"parsed_msg_dict: {parsed_dict}")
-        rewards_collected, observations = reward_collection(parsed_dict)
-        final_reward = sum(rewards_collected)
+        message = json.loads(message)
+        print(message)
+        
+        message_schema = {}
+        message_schema_file_path = r"EduPilot\validation_schema.json"
+        with open(message_schema_file_path, "r+") as file:
+            message_schema = json.load(file)
+            # print(message_schema)
+
+        final_reward = 0
+        observations = [{"Exception": "Input message json schema validation failed. Therefore no rewards given."}]
+        if isinstance(message, dict):
+            try:
+                validator = Draft7Validator(message_schema)
+                validation_result = validator.validate(message)
+                if validation_result==None:
+                    parsed_dict = parse_llm_response(message)
+                    rewards_collected, observations = reward_collection(parsed_dict)
+                    final_reward = sum(rewards_collected)
+            except jsonschema.exceptions.ValidationError:
+                print("Schema validation failed.")
 
         return EdupilotObservation(
-            echoed_message=message,
+            echoed_message=json.dumps(message),
             message_length=length,
             reward_observations=observations,
             done=False,

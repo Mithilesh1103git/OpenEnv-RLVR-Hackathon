@@ -1,5 +1,12 @@
+import os
+import requests
 
 def parse_llm_response(message: str):
+    brand_name_env_var="Masai School"
+    lms_link_env_var="https://students.masaischool.com/assignments/76143"
+    
+    data_validation = {}
+
     parsed_dict = {
         "is_present": {
             "brand_name": False,
@@ -30,6 +37,8 @@ def parse_llm_response(message: str):
             if main_key_node:
                 parsed_dict["is_present"]["brand_name"] = True
                 parsed_dict["raw_values"].append({"brand_name": main_key_node})
+            if main_key_node==brand_name_env_var:
+                data_validation["brand_name"] = True
 
         if key=="greetings":
             main_key_node = root_dict_node[key]
@@ -73,13 +82,29 @@ def parse_llm_response(message: str):
                     if detail_type=="lms_link":
                         parsed_dict["is_present"]["lms_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
+                        if lms_link_env_var in detail_value:
+                            data_validation[detail_type] = True
                     if detail_type=="associated_lecture_link":
                         parsed_dict["is_present"]["associated_lecture_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
+                        try:
+                            response = requests.head(detail_value, timeout=2)
+                            if response.status_code < 400:
+                                data_validation[detail_type] = True
+                        except:
+                            data_validation[detail_type] = False
                     if detail_type=="youtube_lecture_link":
                         parsed_dict["is_present"]["youtube_lecture_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
+                        try:
+                            response = requests.head(detail_value, timeout=2)
+                            if response.status_code < 400:
+                                data_validation[detail_type] = True
+                        except:
+                            data_validation[detail_type] = False
 
+    parsed_dict["data_validation"] = data_validation
+        
     return parsed_dict
 
 def reward_collection(parsed_dict: dict):
@@ -93,9 +118,13 @@ def reward_collection(parsed_dict: dict):
             is_present_reward = 5
             rewards_collected.append(is_present_reward)
             observations.append(f"Element '{key}_is_present' found in message, therefore reward of {is_present_reward} was given.")
-        else:
-            default_reward = 0.5
-            rewards_collected.append(default_reward)
-            observations.append(f"Required '{key}_is_present' was not found in message, therefore default reward of {default_reward} was given.")
+
+    data_validation_keys = parsed_dict['data_validation'].keys()
+    for key in list(data_validation_keys):
+        data_validation_value = parsed_dict['data_validation'][key]
+        if data_validation_value:
+            data_validation_reward = 10
+            rewards_collected.append(data_validation_reward)
+            observations.append(f"Element '{key}_data_validation' found in message, therefore reward of {data_validation_reward} was given.")
 
     return rewards_collected, observations
