@@ -85,10 +85,10 @@ def reward_collection(parsed_dict: dict):
         if is_present_value:
             is_present_reward = 5
             rewards_collected.append(is_present_reward)
-            observations.append(f"Element '{key}_enclosures' found in message, therefore reward of {is_present_reward} was given.")
+            observations.append(f"Element '{key}_is_present' found in message, therefore reward of {is_present_reward} was given.")
         else:
             default_reward = 0.5
             rewards_collected.append(default_reward)
-            observations.append(f"Required '{key}_enclosures' was not found in message, therefore default reward of {default_reward} was given.")
+            observations.append(f"Required '{key}_is_present' was not found in message, therefore default reward of {default_reward} was given.")
 
     return rewards_collected, observations

@@ -95,14 +95,15 @@ class EdupilotEnvironment(Environment):
 
         # Simple reward: longer messages get higher rewards
         parsed_dict = {}
+        # try:
         try:
-            try:
-                parsed_xml_data = ET.fromstring(message)
-                parsed_dict = parse_llm_response(parsed_xml_data)
-            except ParseError:
-                print("ParseError: Invalid XML")
-        except NameError:
-            print("NameError: Invalid XML")
+            print(message)
+            parsed_xml_data = ET.fromstring(str(message))
+            parsed_dict = parse_llm_response(parsed_xml_data)
+        except ParseError:
+            print("ParseError: Invalid XML")
+        # except NameError:
+        #     print("NameError: Invalid XML")
 
         rewards_collected, observations = reward_collection(parsed_dict)
         final_reward = sum(rewards_collected)
