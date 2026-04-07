@@ -29,6 +29,7 @@ def parse_llm_response(message: str):
             main_key_node = root_dict_node[key]
             if main_key_node:
                 parsed_dict["is_present"]["brand_name"] = True
+                parsed_dict["raw_values"].append({"brand_name": main_key_node})
 
         if key=="greetings":
             main_key_node = root_dict_node[key]
@@ -38,16 +39,18 @@ def parse_llm_response(message: str):
                 greetings_prefix = main_key_node['prefix']
                 if greetings_prefix:
                     parsed_dict["is_present"]["greetings_prefix"] = True
-                    # parsed_dict["raw_values"].append({"greetings_prefix": greetings_prefix.text.strip()})
+                    parsed_dict["raw_values"].append({"greetings_prefix": greetings_prefix})
                 
-                greetings_prefix = main_key_node['username']
+                greetings_username = main_key_node['username']
                 if greetings_prefix:
                     parsed_dict["is_present"]["greetings_username"] = True
+                    parsed_dict["raw_values"].append({"greetings_username": greetings_username})
 
         if key=="message":
             main_key_node = root_dict_node[key]
             if main_key_node:
                 parsed_dict["is_present"]["message"] = True
+                parsed_dict["raw_values"].append({"message": main_key_node})
 
         if key=="details":
             main_key_node = root_dict_node[key]
