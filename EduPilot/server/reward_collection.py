@@ -1,11 +1,16 @@
+import json
 import os
+from pathlib import Path
 
-import requests
 import dotenv
+import jsonschema
+import requests
 from dotenv import load_dotenv
+from jsonschema import Draft7Validator
 
-
-env_file_path = r"EduPilot\.env"
+env_file_name = ".env"
+env_dir = Path(__file__).parent.parent.resolve()
+env_file_path = f"{env_dir}/{env_file_name}"
 try:
     env = dotenv.dotenv_values(env_file_path)
     brand_name_env_var = env.get("brand_name")
@@ -14,6 +19,11 @@ except:
     env = load_dotenv(env_file_path)
     brand_name_env_var = os.environ["brand_name"]
     lms_link_env_var = os.environ["lms_link"]
+
+
+env_file_name = "validation_schema.json"
+env_dir = Path(__file__).parent.parent.resolve()
+message_schema_file_path = f"{env_dir}/{env_file_name}"
 
 
 def parse_llm_response(message: str):
@@ -99,7 +109,10 @@ def parse_llm_response(message: str):
                     if detail_type == "lms_link":
                         parsed_dict["is_present"]["lms_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
-                        if lms_link_env_var in detail_value:
+                        if (
+                            lms_link_env_var is not None
+                            and lms_link_env_var in detail_value
+                        ):
                             data_validation[detail_type] = True
                     if detail_type == "associated_lecture_link":
                         parsed_dict["is_present"]["associated_lecture_link"] = True
@@ -150,3 +163,32 @@ def reward_collection(parsed_dict: dict):
             )
 
     return rewards_collected, observations
+
+
+def get_final_reward(message: str):
+    message = json.loads(message)
+    print(message)
+
+    message_schema = {}
+    with open(message_schema_file_path, "r+") as file:
+        message_schema = json.load(file)
+        # print(message_schema)
+
+    final_reward = 0
+    observations = [
+        {
+            "Exception": "Input message json schema validation failed. Therefore no rewards given."
+        }
+    ]
+    if isinstance(message, dict):
+        try:
+            validator = Draft7Validator(message_schema)
+            validation_result = validator.validate(message)
+            if validation_result == None:
+                parsed_dict = parse_llm_response(message)
+                rewards_collected, observations = reward_collection(parsed_dict)
+                final_reward = sum(rewards_collected)
+        except jsonschema.exceptions.ValidationError:
+            print("Schema validation failed.")
+
+    return final_reward, observations
