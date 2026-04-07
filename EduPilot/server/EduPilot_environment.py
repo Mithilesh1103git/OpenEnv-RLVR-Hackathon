@@ -11,12 +11,12 @@ A simple test environment that echoes back messages sent to it.
 Perfect for testing HTTP server infrastructure.
 """
 
-from uuid import uuid4
-from typing import Any, Optional
 import json
+from typing import Any, Optional
+from uuid import uuid4
+
 import jsonschema
 from jsonschema import Draft7Validator
-
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
@@ -59,11 +59,12 @@ class EdupilotEnvironment(Environment):
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._reset_count = 0
 
-    def reset(self,
-            seed: Optional[int] = None,
-            episode_id: Optional[str] = None,
-            **kwargs: Any
-            ) -> EdupilotObservation:
+    def reset(
+        self,
+        seed: Optional[int] = None,
+        episode_id: Optional[str] = None,
+        **kwargs: Any
+    ) -> EdupilotObservation:
         """
         Reset the environment.
 
@@ -97,7 +98,7 @@ class EdupilotEnvironment(Environment):
 
         message = json.loads(message)
         print(message)
-        
+
         message_schema = {}
         message_schema_file_path = r"EduPilot\validation_schema.json"
         with open(message_schema_file_path, "r+") as file:
@@ -105,12 +106,16 @@ class EdupilotEnvironment(Environment):
             # print(message_schema)
 
         final_reward = 0
-        observations = [{"Exception": "Input message json schema validation failed. Therefore no rewards given."}]
+        observations = [
+            {
+                "Exception": "Input message json schema validation failed. Therefore no rewards given."
+            }
+        ]
         if isinstance(message, dict):
             try:
                 validator = Draft7Validator(message_schema)
                 validation_result = validator.validate(message)
-                if validation_result==None:
+                if validation_result == None:
                     parsed_dict = parse_llm_response(message)
                     rewards_collected, observations = reward_collection(parsed_dict)
                     final_reward = sum(rewards_collected)
