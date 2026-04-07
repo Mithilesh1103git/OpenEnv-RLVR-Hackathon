@@ -12,6 +12,8 @@ Perfect for testing HTTP server infrastructure.
 """
 
 from uuid import uuid4
+from typing import Any, Optional
+import json
 
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
@@ -20,6 +22,11 @@ try:
     from ..models import EdupilotAction, EdupilotObservation
 except ImportError:
     from models import EdupilotAction, EdupilotObservation
+
+try:
+    from .reward_collection import parse_llm_response, reward_collection
+except ImportError:
+    from server.reward_collection import parse_llm_response, reward_collection
 
 
 class EdupilotEnvironment(Environment):
@@ -50,7 +57,11 @@ class EdupilotEnvironment(Environment):
         self._state = State(episode_id=str(uuid4()), step_count=0)
         self._reset_count = 0
 
-    def reset(self) -> EdupilotObservation:
+    def reset(self,
+            seed: Optional[int] = None,
+            episode_id: Optional[str] = None,
+            **kwargs: Any
+            ) -> EdupilotObservation:
         """
         Reset the environment.
 
@@ -83,13 +94,21 @@ class EdupilotEnvironment(Environment):
         length = len(message)
 
         # Simple reward: longer messages get higher rewards
-        reward = length * 0.1
+        parsed_dict = {}
+        if isinstance(message, str):
+            message_dict = json.loads(message)
+            # print(f"message: {message}")
+            parsed_dict = parse_llm_response(message_dict)
+        # print(f"parsed_msg_dict: {parsed_dict}")
+        rewards_collected, observations = reward_collection(parsed_dict)
+        final_reward = sum(rewards_collected)
 
         return EdupilotObservation(
             echoed_message=message,
             message_length=length,
+            reward_observations=observations,
             done=False,
-            reward=reward,
+            reward=final_reward,
             metadata={"original_message": message, "step": self._state.step_count},
         )
 

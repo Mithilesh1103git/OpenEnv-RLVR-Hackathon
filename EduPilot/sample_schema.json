@@ -1,0 +1,42 @@
+{
+  "notification": {
+    "brand_name": "Masai School",
+    "greetings": {
+      "prefix": "Dear",
+      "username": "Mithilesh Nakade"
+    },
+    "message": "A new assignment has been released for you.",
+    "details": [
+      {
+        "category": "main-details",
+        "type": "assignment_title",
+        "label": "📘 Assignment Title:",
+        "value": "Faculty Session 87 - Object Detection & Image Segmentation"
+      },
+      {
+        "category": "main-details",
+        "type": "deadline",
+        "label": "🗓 Deadline:",
+        "value": "Apr 9, 2026 at 11:59 PM"
+      },
+      {
+        "category": "extra-details",
+        "type": "lms_link",
+        "label": "🔗 LMS Link:",
+        "value": "https://students.masaischool.com/assignments/76143"
+      },
+      {
+        "category": "extra-details",
+        "type": "associated_lecture_link",
+        "label": "associated lecture:",
+        "value": "https://abc"
+      },
+      {
+        "category": "extra-details",
+        "type": "youtube_lecture_link",
+        "label": "Youtube link:",
+        "value": "https://xyz"
+      }
+    ]
+  }
+}

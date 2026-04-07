@@ -28,8 +28,11 @@ Usage:
     python -m server.app
 """
 
+from openenv.core.env_server.interfaces import Environment
+
 try:
     from openenv.core.env_server.http_server import create_app
+    from openenv.core.env_server.web_interface import create_web_interface_app
 except Exception as e:  # pragma: no cover
     raise ImportError(
         "openenv is required for the web interface. Install dependencies with '\n    uv sync\n'"
@@ -38,7 +41,7 @@ except Exception as e:  # pragma: no cover
 try:
     from ..models import EdupilotAction, EdupilotObservation
     from .EduPilot_environment import EdupilotEnvironment
-except ModuleNotFoundError:
+except ImportError:
     from models import EdupilotAction, EdupilotObservation
     from server.EduPilot_environment import EdupilotEnvironment
 
@@ -51,6 +54,11 @@ app = create_app(
     env_name="EduPilot",
     max_concurrent_envs=1,  # increase this number to allow more concurrent WebSocket sessions
 )
+
+web_app = create_web_interface_app(env=EdupilotEnvironment, 
+                                action_cls=EdupilotAction, 
+                                observation_cls=EdupilotObservation,
+                                env_name="EduPilot")
 
 
 def main(host: str = "0.0.0.0", port: int = 8000):
