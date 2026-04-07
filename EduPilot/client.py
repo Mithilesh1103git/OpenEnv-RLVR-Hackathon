@@ -15,9 +15,7 @@ from openenv.core.env_server.types import State
 from .models import EdupilotAction, EdupilotObservation
 
 
-class EdupilotEnv(
-    EnvClient[EdupilotAction, EdupilotObservation, State]
-):
+class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
     """
     Client for the Edupilot Environment.
 

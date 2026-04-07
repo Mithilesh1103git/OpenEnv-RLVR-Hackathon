@@ -55,10 +55,12 @@ app = create_app(
     max_concurrent_envs=1,  # increase this number to allow more concurrent WebSocket sessions
 )
 
-web_app = create_web_interface_app(env=EdupilotEnvironment, 
-                                action_cls=EdupilotAction, 
-                                observation_cls=EdupilotObservation,
-                                env_name="EduPilot")
+web_app = create_web_interface_app(
+    env=EdupilotEnvironment,
+    action_cls=EdupilotAction,
+    observation_cls=EdupilotObservation,
+    env_name="EduPilot",
+)
 
 
 def main(host: str = "0.0.0.0", port: int = 8000):
