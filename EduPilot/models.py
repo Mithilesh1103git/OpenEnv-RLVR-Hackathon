@@ -25,4 +25,6 @@ class EdupilotObservation(Observation):
 
     echoed_message: str = Field(default="", description="The echoed message")
     message_length: int = Field(default=0, description="Length of the echoed message")
-    reward_observations: list = Field(default=[], description="Observations for what was rewarded and by what")
+    reward_observations: list = Field(
+        default=[], description="Observations for what was rewarded and by what"
+    )

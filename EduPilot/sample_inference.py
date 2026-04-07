@@ -9,11 +9,11 @@ MANDATORY
     LOCAL_IMAGE_NAME The name of the local image to use for the environment if you are using from_docker_image()
                      method
 
-- Defaults are set only for API_BASE_URL and MODEL_NAME 
+- Defaults are set only for API_BASE_URL and MODEL_NAME
     (and should reflect your active inference setup):
     API_BASE_URL = os.getenv("API_BASE_URL", "<your-active-endpoint>")
     MODEL_NAME = os.getenv("MODEL_NAME", "<your-active-model>")
-    
+
 - The inference script must be named `inference.py` and placed in the root directory of the project
 - Participants must use OpenAI Client for all LLM calls using above variables
 
@@ -41,18 +41,17 @@ STDOUT FORMAT
     [END] success=true steps=3 rewards=0.00,0.00,1.00
 """
 
+import base64
 import os
 import re
-import base64
 import textwrap
 from io import BytesIO
-from typing import List, Optional, Dict
+from typing import Dict, List, Optional
 
-from openai import OpenAI
 import numpy as np
-from PIL import Image
-
 from browsergym_env import BrowserGymAction, BrowserGymEnv
+from openai import OpenAI
+from PIL import Image
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
@@ -74,8 +73,7 @@ ACTION_PREFIX_RE = re.compile(
 ACTION_PATTERN = re.compile(r"[A-Za-z_]+\s*\(.*\)", re.DOTALL)
 
 
-SYSTEM_PROMPT = textwrap.dedent(
-    """
+SYSTEM_PROMPT = textwrap.dedent("""
     You control a web browser through BrowserGym.
     Reply with exactly one action string.
     The action must be a valid BrowserGym command such as:
@@ -89,15 +87,16 @@ SYSTEM_PROMPT = textwrap.dedent(
     When clicking, use the BrowserGym element IDs (BIDs) listed in the user message.
     If you are unsure, respond with noop().
     Do not include explanations or additional text.
-    """
-).strip()
+    """).strip()
 
 
 def log_start(task: str, env: str, model: str) -> None:
     print(f"[START] task={task} env={env} model={model}", flush=True)
 
 
-def log_step(step: int, action: str, reward: float, done: bool, error: Optional[str]) -> None:
+def log_step(
+    step: int, action: str, reward: float, done: bool, error: Optional[str]
+) -> None:
     error_val = error if error else "null"
     done_val = str(done).lower()
     print(
@@ -108,7 +107,10 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 
 def log_end(success: bool, steps: int, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}", flush=True)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} rewards={rewards_str}",
+        flush=True,
+    )
 
 
 def build_history_lines(history: List[str]) -> str:
@@ -167,8 +169,7 @@ def build_user_prompt(step: int, observation, history: List[str]) -> str:
     else:
         actions_hint = "    (none detected)"
 
-    prompt = textwrap.dedent(
-        f"""
+    prompt = textwrap.dedent(f"""
         Step: {step}
         Goal: {goal}
         Current URL: {url}
@@ -177,8 +178,7 @@ def build_user_prompt(step: int, observation, history: List[str]) -> str:
         Last action error: {error_note}
         Available clickable element IDs: {actions_hint}
         Reply with exactly one BrowserGym action string.
-        """
-    ).strip()
+        """).strip()
     return prompt
 
 
@@ -280,7 +280,9 @@ def main() -> None:
             rewards.append(reward)
             steps_taken = step
 
-            log_step(step=step, action=action_str, reward=reward, done=done, error=error)
+            log_step(
+                step=step, action=action_str, reward=reward, done=done, error=error
+            )
 
             history_line = f"Step {step}: {action_str} -> reward {reward:+.2f}"
             if error:
