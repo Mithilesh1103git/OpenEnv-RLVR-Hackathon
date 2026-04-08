@@ -62,7 +62,8 @@ import asyncio
 import json
 
 from dotenv import dotenv_values, load_dotenv
-from openai import OpenAI
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_groq import ChatGroq
 from PIL import Image
 
 env_file_name = ".env"
@@ -81,12 +82,11 @@ with open(message_schema_file_path, "r+") as file:
     message_schema = json.load(file)
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-# API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-API_KEY = os.getenv("OPENAI_API_KEY")
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen3-VL-30B-A3B-Instruct:novita"
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-TASK_NAME = os.getenv("EduPilot_TASK_NAME", "unknown-task")
-BENCHMARK = os.getenv("EduPilot_BENCHMARK", "unknown-env")
+TASK_NAME = os.getenv("BROWSERGYM_TASK_NAME", "unknown-task")
+BENCHMARK = os.getenv("BROWSERGYM_BENCHMARK", "unknown-env")
 MAX_STEPS = 8
 MAX_DOM_CHARS = 3500
 TEMPERATURE = 0.2
@@ -102,9 +102,9 @@ ACTION_PATTERN = re.compile(r"[A-Za-z_]+\s*\(.*\)", re.DOTALL)
 
 
 SYSTEM_PROMPT = textwrap.dedent("""
-    You control a web browser through EduPilot.
+    You control a web browser through BrowserGym.
     Reply with exactly one action string.
-    The action must be a valid EduPilot command such as:
+    The action must be a valid BrowserGym command such as:
     - noop()
     - click('<BID>')
     - type('selector', 'text to enter')
@@ -112,7 +112,7 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - send_keys('Enter')
     - scroll('down')
     Use single quotes around string arguments.
-    When clicking, use the EduPilot element IDs (BIDs) listed in the user message.
+    When clicking, use the BrowserGym element IDs (BIDs) listed in the user message.
     If you are unsure, respond with noop().
     Do not include explanations or additional text.
     """).strip()
@@ -189,7 +189,6 @@ def parse_model_action(response_text: str) -> str:
 
 
 async def main() -> None:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
     env = await EdupilotEnv.from_docker_image(
         image=LOCAL_IMAGE_NAME,
@@ -229,31 +228,16 @@ async def main() -> None:
                 },
             ]
 
-            completion = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                temperature=TEMPERATURE,
-                max_completion_tokens=MAX_TOKENS,
-                stream=False,
-            )
-            response_text = completion.choices[0].message.content or ""
-            print(response_text)
+            try:
 
-            # try:
-            #     completion = client.chat.completions.create(
-            #         model=MODEL_NAME,
-            #         messages=messages,
-            #         temperature=TEMPERATURE,
-            #         max_completion_tokens=MAX_TOKENS,
-            #         stream=False,
-            #     )
-            #     response_text = completion.choices[0].message.content or ""
-            #     print(response_text)
-            # except Exception as exc:  # noqa: BLE001
-            #     response_text = FALLBACK_ACTION
-            #     print(exe)
-            #     if DEBUG:
-            #         print(f"[DEBUG] Model request failed: {exc}", flush=True)
+                GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+                llm = ChatGroq(api_key=GROQ_API_KEY, model="openai/gpt-oss-20b")
+                # Using LanguageModelInput (list of messages)
+                response_text = llm.invoke(messages)
+            except Exception as exc:  # noqa: BLE001
+                response_text = FALLBACK_ACTION
+                if DEBUG:
+                    print(f"[DEBUG] Model request failed: {exc}", flush=True)
 
             print(f"response_text: {response_text}")
             action_str = parse_model_action(response_text)
