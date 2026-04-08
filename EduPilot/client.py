@@ -71,13 +71,13 @@ class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
         Returns:
             StepResult with EdupilotObservation
         """
-        obs_data = payload.observation
+        obs_data = payload.get("observation", {})
         observation = EdupilotObservation(
             echoed_message=obs_data.get("echoed_message", ""),
             message_length=obs_data.get("message_length", 0),
-            done=payload.done,
-            reward=payload.reward,
-            metadata=obs_data.metadata,
+            done=payload.get("done", False),
+            reward=payload.get("reward", {}),
+            metadata=obs_data.get("metadata", {}),
         )
 
         return StepResult(
@@ -156,8 +156,8 @@ async def run_client(client: EdupilotEnv):
         print(f"\nStep Result: {step_result}")
 
         # If the state is an awaitable property
-        state = await client.state
-        print(f"\nState: {state}")
+        state_result = await client.state()
+        print(f"\nState: {state_result}")
         
     except asyncio.TimeoutError:
         print("The request timed out. Check if the server at :8001 is responsive.")
@@ -166,5 +166,5 @@ async def run_client(client: EdupilotEnv):
 
 
 if __name__ == "__main__":
-    client = EdupilotEnv(base_url="http://localhost:8001/", message_timeout_s=200)
+    client = EdupilotEnv(base_url="http://localhost:8001/", message_timeout_s=300)
     asyncio.run(run_client(client=client))
