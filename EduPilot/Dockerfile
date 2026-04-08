@@ -63,8 +63,8 @@ ENV PYTHONPATH="/app/env:$PYTHONPATH"
 
 ENV ENABLE_WEB_INTERFACE='true'
 
-ENV brand_name="Scaler School"
-ENV lms_link="https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/"
+ENV BRAND_NAME="Scaler School"
+ENV LMS_LINK="https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/"
 ENV ENABLE_WEB_INTERFACE="true"
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \

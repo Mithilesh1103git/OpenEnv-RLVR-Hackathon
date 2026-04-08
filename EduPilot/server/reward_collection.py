@@ -13,12 +13,12 @@ env_dir = Path(__file__).parent.parent.resolve()
 env_file_path = f"{env_dir}/{env_file_name}"
 try:
     env = dotenv.dotenv_values(env_file_path)
-    brand_name_env_var = env.get("brand_name")
-    lms_link_env_var = env.get("lms_link")
+    brand_name_env_var = env.get("BRAND_NAME")
+    lms_link_env_var = env.get("LMS_LINK")
 except:
-    env = load_dotenv(env_file_path)
-    brand_name_env_var = os.environ["brand_name"]
-    lms_link_env_var = os.environ["lms_link"]
+    load_dotenv(env_file_path)
+    brand_name_env_var = os.environ["BRAND_NAME"]
+    lms_link_env_var = os.environ["LMS_LINK"]
 
 
 env_file_name = "validation_schema.json"

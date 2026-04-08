@@ -62,13 +62,15 @@ class EdupilotEnvironment(Environment):
 
     def __init__(self):
         """Initialize the EduPilot environment."""
-        self._state = State(episode_id=str(uuid4()), 
-                            step_count=0,
-                            environment_name="EduPilot",
-                            task_name="assignment reminder notification generation",
-                            current_reward=0,
-                            history=[],
-                            task_error=False)
+        self._state = State(
+            episode_id=str(uuid4()),
+            step_count=0,
+            environment_name="EduPilot",
+            task_name="assignment reminder notification generation",
+            current_reward=0,
+            history=[],
+            task_error=False,
+        )
         self._reset_count = 0
 
     def reset(
@@ -83,13 +85,15 @@ class EdupilotEnvironment(Environment):
         Returns:
             EdupilotObservation with a ready message
         """
-        self._state = State(episode_id=str(uuid4()), 
-                            step_count=0,
-                            environment_name="EduPilot",
-                            task_name="assignment reminder notification generation",
-                            current_reward=0,
-                            history=[],
-                            task_error=False)
+        self._state = State(
+            episode_id=str(uuid4()),
+            step_count=0,
+            environment_name="EduPilot",
+            task_name="assignment reminder notification generation",
+            current_reward=0,
+            history=[],
+            task_error=False,
+        )
         self._reset_count += 1
 
         return EdupilotObservation(
@@ -119,7 +123,7 @@ class EdupilotEnvironment(Environment):
         self._state.current_reward = final_reward
         self._state.history.append({"msg_len": length, "final_reward": final_reward})
 
-        if final_reward==-1:
+        if final_reward == -1:
             self._state.task_error = True
 
         return EdupilotObservation(

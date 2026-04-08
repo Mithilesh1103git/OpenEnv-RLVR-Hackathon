@@ -81,7 +81,7 @@ def main(host: str = "0.0.0.0", port: int = 8000):
         uvicorn EduPilot.server.app:app --workers 4
     """
     import uvicorn
-    
+
     uvicorn.run(app, host=host, port=port)
 
 

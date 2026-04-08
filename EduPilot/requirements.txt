@@ -6,3 +6,5 @@ black
 httpx
 jsonschema
 python-dotenv
+langchain_core
+langchain_groq

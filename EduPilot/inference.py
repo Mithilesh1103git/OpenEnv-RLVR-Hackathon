@@ -46,12 +46,41 @@ import os
 import re
 import textwrap
 from io import BytesIO
+from pathlib import Path
 from typing import Dict, List, Optional
 
 import numpy as np
-from browsergym_env import BrowserGymAction, BrowserGymEnv
+
+try:
+    from ..models import EdupilotAction, EdupilotObservation
+    from .client import EdupilotEnv
+except ImportError:
+    from models import EdupilotAction, EdupilotObservation
+    from client import EdupilotEnv
+
+import asyncio
+import json
+
+from dotenv import dotenv_values, load_dotenv
+from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_groq import ChatGroq
 from openai import OpenAI
 from PIL import Image
+
+env_file_name = ".env"
+env_dir = Path(__file__).parent.resolve()
+env_file_path = f"{env_dir}/{env_file_name}"
+try:
+    load_dotenv(env_file_path)
+except:
+    env = dotenv_values(env_file_path)
+
+env_file_name = "sample_schema.json"
+env_dir = Path(__file__).parent.resolve()
+message_schema_file_path = f"{env_dir}/{env_file_name}"
+message_schema = {}
+with open(message_schema_file_path, "r+") as file:
+    message_schema = json.load(file)
 
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
@@ -122,18 +151,16 @@ def build_history_lines(history: List[str]) -> str:
 
 def build_user_prompt(step: int, observation, history: List[str]) -> str:
     goal = observation.goal or "(not provided)"
-    url = observation.url or "(unknown)"
     error_note = "Yes" if observation.last_action_error else "No"
 
     prompt = textwrap.dedent(f"""
         Step: {step}
         Goal: {goal}
-        Current URL: {url}
+        schema: {message_schema}
         Previous steps:
         {build_history_lines(history)}
         Last action error: {error_note}
-        Available clickable element IDs: {actions_hint}
-        Reply with exactly one BrowserGym action string.
+        Reply with exactly one EduPilot action json which adhers by given schema.
         """).strip()
     return prompt
 
@@ -163,14 +190,15 @@ def parse_model_action(response_text: str) -> str:
     return FALLBACK_ACTION
 
 
-def main() -> None:
+async def main() -> None:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
-    env = BrowserGymEnv.from_docker_image(
+    env = await EdupilotEnv.from_docker_image(
         image=LOCAL_IMAGE_NAME,
         env_vars={
-            "BROWSERGYM_BENCHMARK": BENCHMARK,
-            "BROWSERGYM_TASK_NAME": TASK_NAME,
+            "BRAND_NAME": "Scaler School",
+            "LMS_LINK": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/",
+            "ENABLE_WEB_INTERFACE": "true",
         },
     )
 
@@ -182,7 +210,7 @@ def main() -> None:
     log_start(task=TASK_NAME, env=BENCHMARK, model=MODEL_NAME or "unknown")
 
     try:
-        result = env.reset()
+        result = await env.reset()
         observation = result.observation
 
         for step in range(1, MAX_STEPS + 1):
@@ -204,21 +232,27 @@ def main() -> None:
             ]
 
             try:
-                completion = client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=messages,
-                    temperature=TEMPERATURE,
-                    max_tokens=MAX_TOKENS,
-                    stream=False,
-                )
-                response_text = completion.choices[0].message.content or ""
+                # completion = client.chat.completions.create(
+                #     model=MODEL_NAME,
+                #     messages=messages,
+                #     temperature=TEMPERATURE,
+                #     max_tokens=MAX_TOKENS,
+                #     stream=False,
+                # )
+                # response_text = completion.choices[0].message.content or ""
+
+                GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+                llm = ChatGroq(api_key=GROQ_API_KEY, model="openai/gpt-oss-20b")
+                # Using LanguageModelInput (list of messages)
+                response_text = llm.invoke(messages)
             except Exception as exc:  # noqa: BLE001
                 response_text = FALLBACK_ACTION
                 if DEBUG:
                     print(f"[DEBUG] Model request failed: {exc}", flush=True)
 
+            print(f"response_text: {response_text}")
             action_str = parse_model_action(response_text)
-            result = env.step(BrowserGymAction(action_str=action_str))
+            result = await env.step(EdupilotAction(action=response_text))
             observation = result.observation
 
             reward = result.reward or 0.0
@@ -246,9 +280,9 @@ def main() -> None:
             success = False
 
     finally:
-        env.close()
+        await env.close()
         log_end(success=success, steps=steps_taken, rewards=rewards)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

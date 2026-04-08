@@ -145,12 +145,13 @@ msg = """{
   }
 }"""
 
+
 async def run_client(client: EdupilotEnv):
     try:
         action = EdupilotAction(message=msg)
         step_payload = client._step_payload(action=action)
         print(f"\nstep_payload: {step_payload}")
-        
+
         # Only call the public awaitable method
         step_result = await client.step(action=action)
         print(f"\nStep Result: {step_result}")
@@ -158,7 +159,7 @@ async def run_client(client: EdupilotEnv):
         # If the state is an awaitable property
         state_result = await client.state()
         print(f"\nState: {state_result}")
-        
+
     except asyncio.TimeoutError:
         print("The request timed out. Check if the server at :8001 is responsive.")
     except Exception as e:
@@ -168,4 +169,3 @@ async def run_client(client: EdupilotEnv):
 if __name__ == "__main__":
     client = EdupilotEnv(base_url="http://localhost:8001/", message_timeout_s=300)
     asyncio.run(run_client(client=client))
-
