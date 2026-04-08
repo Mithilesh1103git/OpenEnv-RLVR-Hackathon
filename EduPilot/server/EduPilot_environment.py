@@ -83,7 +83,13 @@ class EdupilotEnvironment(Environment):
         Returns:
             EdupilotObservation with a ready message
         """
-        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self._state = State(episode_id=str(uuid4()), 
+                            step_count=0,
+                            environment_name="EduPilot",
+                            task_name="assignment reminder notification generation",
+                            current_reward=0,
+                            history=[],
+                            task_error=False)
         self._reset_count += 1
 
         return EdupilotObservation(

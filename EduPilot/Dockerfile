@@ -29,7 +29,7 @@ ENV UV_PYTHON_DOWNLOADS=never
 COPY . /app/env
 WORKDIR /app/env
 
-# RUN /app/env/pre-validation-script.sh https://huggingface.co/spaces/Man1103/edupilot-openenv-docker?
+# RUN /app/env/pre-validation-script.sh https://huggingface.co/spaces/Man1103/edupilot-openenv-docker
 
 # Install dependencies (Step 1: Just the lockfile/pyproject for caching)
 RUN --mount=type=cache,target=/root/.cache/uv \
