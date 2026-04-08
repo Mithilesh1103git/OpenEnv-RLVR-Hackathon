@@ -1,8 +1,8 @@
 openenv[core]
 fastapi
 uvicorn
-isort 
-black 
-httpx 
-jsonschema 
+isort
+black
+httpx
+jsonschema
 python-dotenv

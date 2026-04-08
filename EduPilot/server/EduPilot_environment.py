@@ -15,8 +15,6 @@ import json
 from typing import Any, Optional
 from uuid import uuid4
 
-import jsonschema
-from jsonschema import Draft7Validator
 from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
@@ -26,9 +24,17 @@ except ImportError:
     from models import EdupilotAction, EdupilotObservation
 
 try:
-    from .reward_collection import parse_llm_response, reward_collection
+    from .reward_collection import (
+        get_final_reward,
+        parse_llm_response,
+        reward_collection,
+    )
 except ImportError:
-    from server.reward_collection import parse_llm_response, reward_collection
+    from server.reward_collection import (
+        get_final_reward,
+        parse_llm_response,
+        reward_collection,
+    )
 
 
 class EdupilotEnvironment(Environment):
@@ -63,7 +69,7 @@ class EdupilotEnvironment(Environment):
         self,
         seed: Optional[int] = None,
         episode_id: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> EdupilotObservation:
         """
         Reset the environment.
@@ -96,31 +102,7 @@ class EdupilotEnvironment(Environment):
         message = action.message
         length = len(message)
 
-        message = json.loads(message)
-        print(message)
-
-        message_schema = {}
-        message_schema_file_path = r"EduPilot\validation_schema.json"
-        with open(message_schema_file_path, "r+") as file:
-            message_schema = json.load(file)
-            # print(message_schema)
-
-        final_reward = 0
-        observations = [
-            {
-                "Exception": "Input message json schema validation failed. Therefore no rewards given."
-            }
-        ]
-        if isinstance(message, dict):
-            try:
-                validator = Draft7Validator(message_schema)
-                validation_result = validator.validate(message)
-                if validation_result == None:
-                    parsed_dict = parse_llm_response(message)
-                    rewards_collected, observations = reward_collection(parsed_dict)
-                    final_reward = sum(rewards_collected)
-            except jsonschema.exceptions.ValidationError:
-                print("Schema validation failed.")
+        final_reward, observations = get_final_reward(message)
 
         return EdupilotObservation(
             echoed_message=json.dumps(message),
