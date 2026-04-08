@@ -68,7 +68,7 @@ class EdupilotEnvironment(Environment):
                             task_name="assignment reminder notification generation",
                             current_reward=0,
                             history=[],
-                            task_error=None)
+                            task_error=False)
         self._reset_count = 0
 
     def reset(
@@ -112,6 +112,9 @@ class EdupilotEnvironment(Environment):
 
         self._state.current_reward = final_reward
         self._state.history.append({"msg_len": length, "final_reward": final_reward})
+
+        if final_reward==-1:
+            self._state.task_error = True
 
         return EdupilotObservation(
             echoed_message=json.dumps(message),
