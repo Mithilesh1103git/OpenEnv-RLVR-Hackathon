@@ -118,7 +118,7 @@ def parse_llm_response(message: str):
                         parsed_dict["is_present"]["associated_lecture_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
                         try:
-                            response = requests.head(detail_value, timeout=2)
+                            response = requests.head(detail_value, timeout=5)
                             if response.status_code < 400:
                                 data_validation[detail_type] = True
                         except:
@@ -128,7 +128,7 @@ def parse_llm_response(message: str):
                             parsed_dict["is_present"]["youtube_lecture_link"] = True
                             parsed_dict["raw_values"].append({detail_key: detail_value})
                             try:
-                                response = requests.head(detail_value, timeout=2)
+                                response = requests.head(detail_value, timeout=5)
                                 if response.status_code < 400:
                                     data_validation[detail_type] = True
                             except:
