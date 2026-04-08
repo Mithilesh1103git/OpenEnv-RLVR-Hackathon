@@ -1,3 +1,29 @@
+----
+Project build 
+
+python -m  pip install -r .\EduPilot\requirements.txt
+
+
+Project deployment
+
+python -m uvicorn EduPilot.server.app:web_app --host 0.0.0.0 --port 8001 --reload
+
+
+
+Install the docker in the system
+
+--pull
+docker pull mithilesh1103/openenv-edupilot-mithilesh:latest
+
+--hosting docker in local
+docker run --rm -p 8003:8000 --name openenv-edupilot mithilesh1103/openenv-edupilot-mithilesh:latest
+
+
+
+
+
+
+
 ---
 title: Edupilot Environment Server
 emoji: 🎧
