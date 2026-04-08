@@ -146,7 +146,7 @@ def reward_collection(parsed_dict: dict):
     for key in list(is_present_keys):
         is_present_value = parsed_dict["is_present"][key]
         if is_present_value:
-            is_present_reward = 5
+            is_present_reward = 0.5
             rewards_collected.append(is_present_reward)
             observations.append(
                 f"Element '{key}_is_present' found in message, therefore reward of {is_present_reward} was given."
@@ -156,7 +156,7 @@ def reward_collection(parsed_dict: dict):
     for key in list(data_validation_keys):
         data_validation_value = parsed_dict["data_validation"][key]
         if data_validation_value:
-            data_validation_reward = 10
+            data_validation_reward = 1
             rewards_collected.append(data_validation_reward)
             observations.append(
                 f"Element '{key}_data_validation' found in message, therefore reward of {data_validation_reward} was given."
