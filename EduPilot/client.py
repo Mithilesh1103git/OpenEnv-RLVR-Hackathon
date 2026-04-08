@@ -168,3 +168,4 @@ async def run_client(client: EdupilotEnv):
 if __name__ == "__main__":
     client = EdupilotEnv(base_url="http://localhost:8001/", message_timeout_s=300)
     asyncio.run(run_client(client=client))
+

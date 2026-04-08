@@ -62,7 +62,13 @@ class EdupilotEnvironment(Environment):
 
     def __init__(self):
         """Initialize the EduPilot environment."""
-        self._state = State(episode_id=str(uuid4()), step_count=0)
+        self._state = State(episode_id=str(uuid4()), 
+                            step_count=0,
+                            environment_name="EduPilot",
+                            task_name="assignment reminder notification generation",
+                            current_reward=0,
+                            history=[],
+                            task_error=None)
         self._reset_count = 0
 
     def reset(
@@ -103,6 +109,9 @@ class EdupilotEnvironment(Environment):
         length = len(message)
 
         final_reward, observations = get_final_reward(message)
+
+        self._state.current_reward = final_reward
+        self._state.history.append({"msg_len": length, "final_reward": final_reward})
 
         return EdupilotObservation(
             echoed_message=json.dumps(message),
