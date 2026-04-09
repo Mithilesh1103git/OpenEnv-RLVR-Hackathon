@@ -12,7 +12,12 @@ from openenv.core import EnvClient
 from openenv.core.client_types import StepResult
 from openenv.core.env_server.types import State
 
-from .models import EdupilotAction, EdupilotObservation
+try:
+    from .models import EdupilotAction, EdupilotObservation
+except:
+    from models import EdupilotAction, EdupilotObservation
+
+import asyncio
 
 
 class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
@@ -71,7 +76,7 @@ class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
             echoed_message=obs_data.get("echoed_message", ""),
             message_length=obs_data.get("message_length", 0),
             done=payload.get("done", False),
-            reward=payload.get("reward"),
+            reward=payload.get("reward", {}),
             metadata=obs_data.get("metadata", {}),
         )
 
@@ -95,3 +100,72 @@ class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),
         )
+
+
+msg = """{
+  "notification": {
+    "brand_name": "Scaler School",
+    "greetings": {
+      "prefix": "Dear",
+      "username": "Mithilesh Nakade"
+    },
+    "message": "A new assignment has been released for you.",
+    "details": [
+      {
+        "category": "main-details",
+        "type": "assignment_title",
+        "label": "📘 Assignment Title:",
+        "value": "Faculty Session - Meta and Scaler OpenEnv Hackathon"
+      },
+      {
+        "category": "main-details",
+        "type": "deadline",
+        "label": "🗓 Deadline:",
+        "value": "Apr 9, 2026 at 11:59 PM"
+      },
+      {
+        "category": "extra-details",
+        "type": "lms_link",
+        "label": "🔗 LMS Link:",
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/"
+      },
+      {
+        "category": "extra-details",
+        "type": "associated_lecture_link",
+        "label": "associated lecture:",
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/dashboard?utm_source=midfunnel&utm_medium=email&utm_campaign=registration_acknowledgement"
+      },
+      {
+        "category": "extra-details",
+        "type": "youtube_lecture_link",
+        "label": "Youtube link:",
+        "value": "https://www.youtube.com/watch?v=kkCNMz0Ptd8&t=1703s"
+      }
+    ]
+  }
+}"""
+
+async def run_client(client: EdupilotEnv):
+    try:
+        action = EdupilotAction(message=msg)
+        step_payload = client._step_payload(action=action)
+        print(f"\nstep_payload: {step_payload}")
+        
+        # Only call the public awaitable method
+        step_result = await client.step(action=action)
+        print(f"\nStep Result: {step_result}")
+
+        # If the state is an awaitable property
+        state_result = await client.state()
+        print(f"\nState: {state_result}")
+        
+    except asyncio.TimeoutError:
+        print("The request timed out. Check if the server at :8001 is responsive.")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+
+
+if __name__ == "__main__":
+    client = EdupilotEnv(base_url="http://localhost:8001/", message_timeout_s=300)
+    asyncio.run(run_client(client=client))
+

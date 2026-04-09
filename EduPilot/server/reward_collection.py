@@ -107,31 +107,32 @@ def parse_llm_response(message: str):
                         parsed_dict["is_present"]["deadline"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
                     if detail_type == "lms_link":
-                        parsed_dict["is_present"]["lms_link"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
                         if (
                             lms_link_env_var is not None
                             and lms_link_env_var in detail_value
                         ):
+                            parsed_dict["is_present"]["lms_link"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
                             data_validation[detail_type] = True
                     if detail_type == "associated_lecture_link":
                         parsed_dict["is_present"]["associated_lecture_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
                         try:
-                            response = requests.head(detail_value, timeout=2)
+                            response = requests.head(detail_value, timeout=5)
                             if response.status_code < 400:
                                 data_validation[detail_type] = True
                         except:
                             data_validation[detail_type] = False
                     if detail_type == "youtube_lecture_link":
-                        parsed_dict["is_present"]["youtube_lecture_link"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                        try:
-                            response = requests.head(detail_value, timeout=2)
-                            if response.status_code < 400:
-                                data_validation[detail_type] = True
-                        except:
-                            data_validation[detail_type] = False
+                        if "https://www.youtube.com" in detail_value:
+                            parsed_dict["is_present"]["youtube_lecture_link"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                            try:
+                                response = requests.head(detail_value, timeout=5)
+                                if response.status_code < 400:
+                                    data_validation[detail_type] = True
+                            except:
+                                data_validation[detail_type] = False
 
     parsed_dict["data_validation"] = data_validation
 
@@ -146,7 +147,7 @@ def reward_collection(parsed_dict: dict):
     for key in list(is_present_keys):
         is_present_value = parsed_dict["is_present"][key]
         if is_present_value:
-            is_present_reward = 5
+            is_present_reward = 0.5
             rewards_collected.append(is_present_reward)
             observations.append(
                 f"Element '{key}_is_present' found in message, therefore reward of {is_present_reward} was given."
@@ -156,7 +157,7 @@ def reward_collection(parsed_dict: dict):
     for key in list(data_validation_keys):
         data_validation_value = parsed_dict["data_validation"][key]
         if data_validation_value:
-            data_validation_reward = 10
+            data_validation_reward = 1
             rewards_collected.append(data_validation_reward)
             observations.append(
                 f"Element '{key}_data_validation' found in message, therefore reward of {data_validation_reward} was given."
@@ -174,7 +175,7 @@ def get_final_reward(message: str):
         message_schema = json.load(file)
         # print(message_schema)
 
-    final_reward = 0
+    final_reward = -1
     observations = [
         {
             "Exception": "Input message json schema validation failed. Therefore no rewards given."

@@ -1,6 +1,6 @@
 {
   "notification": {
-    "brand_name": "Masai School",
+    "brand_name": "Scaler School",
     "greetings": {
       "prefix": "Dear",
       "username": "Mithilesh Nakade"
@@ -11,7 +11,7 @@
         "category": "main-details",
         "type": "assignment_title",
         "label": "📘 Assignment Title:",
-        "value": "Faculty Session 87 - Object Detection & Image Segmentation"
+        "value": "Faculty Session - Meta and Scaler OpenEnv Hackathon"
       },
       {
         "category": "main-details",
@@ -23,19 +23,19 @@
         "category": "extra-details",
         "type": "lms_link",
         "label": "🔗 LMS Link:",
-        "value": "https://students.masaischool.com/assignments/76143"
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/"
       },
       {
         "category": "extra-details",
         "type": "associated_lecture_link",
         "label": "associated lecture:",
-        "value": "https://abc"
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/dashboard?utm_source=midfunnel&utm_medium=email&utm_campaign=registration_acknowledgement"
       },
       {
         "category": "extra-details",
         "type": "youtube_lecture_link",
         "label": "Youtube link:",
-        "value": "https://xyz"
+        "value": "https://www.youtube.com/watch?v=kkCNMz0Ptd8&t=1703s"
       }
     ]
   }
