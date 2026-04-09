@@ -99,20 +99,61 @@ ACTION_PATTERN = re.compile(r"[A-Za-z_]+\s*\(.*\)", re.DOTALL)
 
 
 SYSTEM_PROMPT = textwrap.dedent("""
-    You control a web browser through EduPilot.
-    Reply with exactly one action string.
-    The action must be a valid EduPilot command such as:
-    - noop()
-    - click('<BID>')
-    - type('selector', 'text to enter')
-    - fill('selector', 'text to enter')
-    - send_keys('Enter')
-    - scroll('down')
-    Use single quotes around string arguments.
-    When clicking, use the EduPilot element IDs (BIDs) listed in the user message.
-    If you are unsure, respond with noop().
-    Do not include explanations or additional text.
+    You are an intelligent agent and a structured data generator.
+
+    Your task is to produce a valid JSON object that strictly adheres to the provided schema.
+
+    Instructions:
+    - If the task is to create or transform data → output ONLY valid JSON.
+
+    Rules:
+    - Output ONLY valid JSON.
+    - Do not include explanations, comments, or extra text.
+    - Follow the schema exactly (keys, nesting, and structure).
+    - Preserve all provided values unless instructed otherwise.
+    - Ensure proper formatting (double quotes, valid syntax).
+    - Never mix JSON and actions.
+    - No explanations or extra text.
+    - Follow the schema strictly when generating JSON.
+    - Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given schema. 
+    - Labels should be string and should not contain any link.
+    - Convert deadline in hh:mm AM/PM format.
+    - If unsure:
+        - For JSON tasks → best-effort valid JSON
     """).strip()
+
+
+class PromptContextModel(BaseModel):
+    task: str = Field(default="I want to send an assignment reminder email to the students. All the details should be in the final notification JSON.", description="")
+    assignment_title: str = Field(default="", description="assignment title")
+    deadline: str = Field(default="", description="assignment deadline")
+    associated_lecture_link: str = Field(default="", description="assignment deadline")
+    additional_task: str = Field(default="please find just one relevant youtube link for the this assignment", description="assignment deadline")
+
+
+prompt_context_list = [
+    PromptContextModel(
+        task="I want to send an assignment reminder email to the students. All the details should be in the final notification JSON.",
+        assignment_title="Meta and Scaler OpenEnv Hackathon",
+        deadline="April 12, 2026 by end of the day",
+        associated_lecture_link="https://onlinecourses.nptel.ac.in/",
+        additional_task="Find just one relevant youtube link for the subject of OpenEnv Reinforcement Learning for models and agents. Add that just one link in the value of final JSON."
+    ),
+    PromptContextModel(
+        task="I want to send an assignment reminder email to the students. All the details should be in the final notification JSON.",
+        assignment_title="Meta and Scaler OpenEnv Hackathon",
+        deadline="May 14, 2026 by end of the day",
+        associated_lecture_link="https://onlinecourses.nptel.ac.in/",
+        additional_task="Find just one relevant youtube link for the subject of OpenEnv Reinforcement Learning for models and agents. Add that just one link in the value of final JSON."
+    ),
+    PromptContextModel(
+        task="I want to send an assignment reminder email to the students. All the details should be in the final notification JSON.",
+        assignment_title="Meta and Scaler OpenEnv Hackathon",
+        deadline="June 25, 2026 by end of the day",
+        associated_lecture_link="https://onlinecourses.nptel.ac.in/",
+        additional_task="Find just one relevant youtube link for the subject of OpenEnv Reinforcement Learning for models and agents. Add that just one link in the value of final JSON."
+    )
+]
 
 
 def log_start(task: str, env: str, model: str) -> None:
@@ -144,17 +185,30 @@ def build_history_lines(history: List[str]) -> str:
     return "\n".join(history[-4:])
 
 
-def build_user_prompt(step: int, observation, history: List[str]) -> str:
+def build_user_prompt(step: int, observation, prompt_context: PromptContextModel, history: List[str]) -> str:
     goal = observation.goal or "(not provided)"
     error_note = "Yes" if observation.last_action_error else "No"
+
+    context_text = textwrap.dedent(f"""
+        task: {prompt_context.task}
+        assignment title: {prompt_context.assignment_title}
+        deadline: {prompt_context.deadline}
+        associated lecture link: {prompt_context.associated_lecture_link}
+        additional task: {prompt_context.additional_task}
+        Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given schema. 
+        Labels should be string and should not contain any link.
+        Convert deadline in hh:mm AM/PM format.
+        Reply with exactly one EduPilot action json which adhers by given schema.
+        """).strip()
 
     prompt = textwrap.dedent(f"""
         Step: {step}
         Goal: {goal}
-        schema: {message_schema}
+        schema: {msg_schema}
         Previous steps:
         {build_history_lines(history)}
         Last action error: {error_note}
+        Current context: {context_text}
         Reply with exactly one EduPilot action json which adhers by given schema.
         """).strip()
     return prompt
