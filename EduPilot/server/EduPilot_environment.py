@@ -12,6 +12,7 @@ Perfect for testing HTTP server infrastructure.
 """
 
 import json
+import os
 from typing import Any, Optional
 from uuid import uuid4
 
@@ -35,6 +36,8 @@ except ImportError:
         parse_llm_response,
         reward_collection,
     )
+
+TASK_NAME = os.getenv("EDUPILOT_TASK_NAME", "unknown-task")
 
 
 class EdupilotEnvironment(Environment):
@@ -66,7 +69,7 @@ class EdupilotEnvironment(Environment):
             episode_id=str(uuid4()),
             step_count=0,
             environment_name="EduPilot",
-            task_name="assignment reminder notification generation",
+            task_name=TASK_NAME,
             current_reward=0,
             history=[],
             task_error=False,
@@ -89,7 +92,7 @@ class EdupilotEnvironment(Environment):
             episode_id=str(uuid4()),
             step_count=0,
             environment_name="EduPilot",
-            task_name="assignment reminder notification generation",
+            task_name=TASK_NAME,
             current_reward=0,
             history=[],
             task_error=False,
@@ -101,6 +104,7 @@ class EdupilotEnvironment(Environment):
             message_length=0,
             done=False,
             reward=0.0,
+            last_action_error=self._state.task_error,
         )
 
     def step(self, action: EdupilotAction) -> EdupilotObservation:  # type: ignore[override]

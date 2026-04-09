@@ -18,6 +18,7 @@ except:
     from models import EdupilotAction, EdupilotObservation
 
 import asyncio
+import json
 
 
 class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
@@ -99,6 +100,8 @@ class EdupilotEnv(EnvClient[EdupilotAction, EdupilotObservation, State]):
         return State(
             episode_id=payload.get("episode_id"),
             step_count=payload.get("step_count", 0),
+            current_reward=payload.get("current_reward", 0),
+            task_error=payload.get("task_error", False),
         )
 
 
@@ -150,15 +153,29 @@ async def run_client(client: EdupilotEnv):
     try:
         action = EdupilotAction(message=msg)
         step_payload = client._step_payload(action=action)
-        print(f"\nstep_payload: {step_payload}")
+        # print(f"\nstep_payload: {json.dumps(step_payload)}")
 
         # Only call the public awaitable method
         step_result = await client.step(action=action)
-        print(f"\nStep Result: {step_result}")
+        print("\n")
+        print("----------------------------" * 3)
+        print("Step Result: ")
+        print("    ", f"goal: {step_result.observation.goal}")
+        print("    ", f"message length: {step_result.observation.message_length}")
+        print("    ", f"reward: {step_result.observation.reward}")
+        print("    ", f"last action error: {step_result.observation.last_action_error}")
+        print("----------------------------" * 3)
 
         # If the state is an awaitable property
         state_result = await client.state()
-        print(f"\nState: {state_result}")
+        print("\n")
+        print("----------------------------" * 3)
+        print(f"State:")
+        print("    ", f"episode id: {state_result.episode_id}")
+        print("    ", f"step count: {state_result.step_count}")
+        print("    ", f"current reward: {state_result.current_reward}")
+        print("    ", f"task error: {state_result.task_error}")
+        print("----------------------------" * 3)
 
     except asyncio.TimeoutError:
         print("The request timed out. Check if the server at :8001 is responsive.")

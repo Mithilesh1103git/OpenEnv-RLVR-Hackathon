@@ -26,10 +26,9 @@ class EdupilotObservation(Observation):
     echoed_message: str = Field(default="", description="The echoed message")
     message_length: int = Field(default=0, description="Length of the echoed message")
     goal: str = Field(
-        default="Create json data for notification message exactly matching the schema",
+        default="Create a reminder email notification object in JSON format exactly matching the required schema and expected values",
         description="Goal of the agent to perform",
     )
-    message_schema: dict = Field(default={}, description="default json schema")
     last_action_error: bool = Field(
         default=False, description="whether there was last action error"
     )

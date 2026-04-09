@@ -68,10 +68,7 @@ from PIL import Image
 env_file_name = ".env"
 env_dir = Path(__file__).parent.resolve()
 env_file_path = f"{env_dir}/{env_file_name}"
-try:
-    load_dotenv(env_file_path)
-except:
-    env = dotenv_values(env_file_path)
+load_dotenv(env_file_path)
 
 env_file_name = "sample_schema.json"
 env_dir = Path(__file__).parent.resolve()
@@ -85,8 +82,8 @@ API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
 API_KEY = os.getenv("OPENAI_API_KEY")
 MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen3-VL-30B-A3B-Instruct:novita"
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
-TASK_NAME = os.getenv("EduPilot_TASK_NAME", "unknown-task")
-BENCHMARK = os.getenv("EduPilot_BENCHMARK", "unknown-env")
+TASK_NAME = os.getenv("EDUPILOT_TASK_NAME", "unknown-task")
+BENCHMARK = os.getenv("EDUPILOT_BENCHMARK", "unknown-env")
 MAX_STEPS = 8
 MAX_DOM_CHARS = 3500
 TEMPERATURE = 0.2
@@ -229,31 +226,21 @@ async def main() -> None:
                 },
             ]
 
-            completion = client.chat.completions.create(
-                model=MODEL_NAME,
-                messages=messages,
-                temperature=TEMPERATURE,
-                max_completion_tokens=MAX_TOKENS,
-                stream=False,
-            )
-            response_text = completion.choices[0].message.content or ""
-            print(response_text)
-
-            # try:
-            #     completion = client.chat.completions.create(
-            #         model=MODEL_NAME,
-            #         messages=messages,
-            #         temperature=TEMPERATURE,
-            #         max_completion_tokens=MAX_TOKENS,
-            #         stream=False,
-            #     )
-            #     response_text = completion.choices[0].message.content or ""
-            #     print(response_text)
-            # except Exception as exc:  # noqa: BLE001
-            #     response_text = FALLBACK_ACTION
-            #     print(exe)
-            #     if DEBUG:
-            #         print(f"[DEBUG] Model request failed: {exc}", flush=True)
+            try:
+                completion = client.chat.completions.create(
+                    model=MODEL_NAME,
+                    messages=messages,
+                    temperature=TEMPERATURE,
+                    max_completion_tokens=MAX_TOKENS,
+                    stream=False,
+                )
+                response_text = completion.choices[0].message.content or ""
+                print(response_text)
+            except Exception as exc:  # noqa: BLE001
+                response_text = FALLBACK_ACTION
+                print(exe)
+                if DEBUG:
+                    print(f"[DEBUG] Model request failed: {exc}", flush=True)
 
             print(f"response_text: {response_text}")
             action_str = parse_model_action(response_text)

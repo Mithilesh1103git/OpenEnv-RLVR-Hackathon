@@ -45,6 +45,15 @@ except ImportError:
     from models import EdupilotAction, EdupilotObservation
     from server.EduPilot_environment import EdupilotEnvironment
 
+from pathlib import Path
+
+import dotenv
+from dotenv import dotenv_values, load_dotenv
+
+env_file_name = ".env"
+env_dir = Path(__file__).parent.parent.resolve()
+env_file_path = f"{env_dir}/{env_file_name}"
+load_dotenv(env_file_path)
 
 # Create the app with web interface and README integration
 app = create_app(
@@ -93,7 +102,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     main(port=args.port)
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Call your main function here, for example:
     # app.run() or main()
     pass

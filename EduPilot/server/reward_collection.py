@@ -5,20 +5,18 @@ from pathlib import Path
 import dotenv
 import jsonschema
 import requests
-from dotenv import load_dotenv
+from dotenv import dotenv_values, load_dotenv
 from jsonschema import Draft7Validator
 
 env_file_name = ".env"
 env_dir = Path(__file__).parent.parent.resolve()
 env_file_path = f"{env_dir}/{env_file_name}"
-try:
-    env = dotenv.dotenv_values(env_file_path)
-    brand_name_env_var = env.get("BRAND_NAME")
-    lms_link_env_var = env.get("LMS_LINK")
-except:
-    load_dotenv(env_file_path)
-    brand_name_env_var = os.environ["BRAND_NAME"]
-    lms_link_env_var = os.environ["LMS_LINK"]
+load_dotenv(dotenv_path=env_file_path)
+
+BRAND_NAME_ENV_VAR = os.getenv("BRAND_NAME", "Default Brand")
+STATIC_MESSAGE_TEXT = os.getenv("STATIC_MESSAGE_TEXT", "Default Message")
+LMS_DOMAIN_URL = os.getenv("LMS_DOMAIN_URL")
+YOUTUBE_DOMAIN_URL = os.getenv("YOUTUBE_DOMAIN_URL")
 
 
 env_file_name = "validation_schema.json"
@@ -60,7 +58,7 @@ def parse_llm_response(message: str):
             if main_key_node:
                 parsed_dict["is_present"]["brand_name"] = True
                 parsed_dict["raw_values"].append({"brand_name": main_key_node})
-            if main_key_node == brand_name_env_var:
+            if main_key_node == BRAND_NAME_ENV_VAR:
                 data_validation["brand_name"] = True
 
         if key == "greetings":
@@ -87,6 +85,10 @@ def parse_llm_response(message: str):
             if main_key_node:
                 parsed_dict["is_present"]["message"] = True
                 parsed_dict["raw_values"].append({"message": main_key_node})
+                if STATIC_MESSAGE_TEXT is not None and main_key_node.startswith(
+                    STATIC_MESSAGE_TEXT
+                ):
+                    data_validation["message"] = True
 
         if key == "details":
             main_key_node = root_dict_node[key]
@@ -107,26 +109,30 @@ def parse_llm_response(message: str):
                         parsed_dict["is_present"]["deadline"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
                     if detail_type == "lms_link":
-                        if (
-                            lms_link_env_var is not None
-                            and lms_link_env_var in detail_value
+                        parsed_dict["is_present"]["lms_link"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                        if LMS_DOMAIN_URL is not None and detail_value.startswith(
+                            LMS_DOMAIN_URL
                         ):
-                            parsed_dict["is_present"]["lms_link"] = True
-                            parsed_dict["raw_values"].append({detail_key: detail_value})
                             data_validation[detail_type] = True
                     if detail_type == "associated_lecture_link":
                         parsed_dict["is_present"]["associated_lecture_link"] = True
                         parsed_dict["raw_values"].append({detail_key: detail_value})
-                        try:
-                            response = requests.head(detail_value, timeout=5)
-                            if response.status_code < 400:
-                                data_validation[detail_type] = True
-                        except:
-                            data_validation[detail_type] = False
+                        if LMS_DOMAIN_URL is not None and detail_value.startswith(
+                            LMS_DOMAIN_URL
+                        ):
+                            try:
+                                response = requests.head(detail_value, timeout=5)
+                                if response.status_code < 400:
+                                    data_validation[detail_type] = True
+                            except:
+                                data_validation[detail_type] = False
                     if detail_type == "youtube_lecture_link":
-                        if "https://www.youtube.com" in detail_value:
-                            parsed_dict["is_present"]["youtube_lecture_link"] = True
-                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                        parsed_dict["is_present"]["youtube_lecture_link"] = True
+                        parsed_dict["raw_values"].append({detail_key: detail_value})
+                        if YOUTUBE_DOMAIN_URL is not None and detail_value.startswith(
+                            YOUTUBE_DOMAIN_URL
+                        ):
                             try:
                                 response = requests.head(detail_value, timeout=5)
                                 if response.status_code < 400:
@@ -150,7 +156,7 @@ def reward_collection(parsed_dict: dict):
             is_present_reward = 0.5
             rewards_collected.append(is_present_reward)
             observations.append(
-                f"Element '{key}_is_present' found in message, therefore reward of {is_present_reward} was given."
+                f"Observed successful schema validation of element '{key}' and therefore, reward of {is_present_reward} was given."
             )
 
     data_validation_keys = parsed_dict["data_validation"].keys()
@@ -160,7 +166,7 @@ def reward_collection(parsed_dict: dict):
             data_validation_reward = 1
             rewards_collected.append(data_validation_reward)
             observations.append(
-                f"Element '{key}_data_validation' found in message, therefore reward of {data_validation_reward} was given."
+                f"Observed successful data validation of element '{key}' and therefore, reward of {data_validation_reward} was given."
             )
 
     return rewards_collected, observations
