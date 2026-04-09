@@ -35,3 +35,5 @@ class EdupilotObservation(Observation):
     reward_observations: list = Field(
         default=[], description="Observations for what was rewarded and by what"
     )
+    success_ratio: float = Field(default=0.0, description="Success ratio against the benchmark")
+    mean_performance: float = Field(default=0.0, description="Mean performance of the agent")

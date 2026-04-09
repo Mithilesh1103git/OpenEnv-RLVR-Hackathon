@@ -172,7 +172,7 @@ def reward_collection(parsed_dict: dict):
     return rewards_collected, observations
 
 
-def get_final_reward(message: str):
+def get_rewards(message: str):
     message = json.loads(message)
     print(message)
 
@@ -199,3 +199,16 @@ def get_final_reward(message: str):
             print("Schema validation failed.")
 
     return final_reward, observations
+
+
+def get_metrics(final_reward: float, edupilot_benchmark: float, history: list):
+    success_ratio, mean_performance = 0.0, 0.0
+    
+    if final_reward and edupilot_benchmark:
+        success_ratio = final_reward / edupilot_benchmark
+
+    len_history = len(history)
+    if len_history>1:
+        mean_performance = sum([history[n]["final_reward"] for n in range(len_history)]) / len_history
+
+    return success_ratio, mean_performance

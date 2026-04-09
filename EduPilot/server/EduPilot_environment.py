@@ -26,18 +26,21 @@ except ImportError:
 
 try:
     from .reward_collection import (
-        get_final_reward,
+        get_rewards,
+        get_metrics,
         parse_llm_response,
         reward_collection,
     )
 except ImportError:
     from server.reward_collection import (
-        get_final_reward,
+        get_rewards,
+        get_metrics,
         parse_llm_response,
         reward_collection,
     )
 
 TASK_NAME = os.getenv("EDUPILOT_TASK_NAME", "unknown-task")
+edupilot_benchmark = float(os.getenv("EDUPILOT_BENCHMARK"))
 
 
 class EdupilotEnvironment(Environment):
@@ -71,6 +74,7 @@ class EdupilotEnvironment(Environment):
             environment_name="EduPilot",
             task_name=TASK_NAME,
             current_reward=0,
+            benchmark_reward=edupilot_benchmark if edupilot_benchmark else 0.0,
             history=[],
             task_error=False,
         )
@@ -94,6 +98,7 @@ class EdupilotEnvironment(Environment):
             environment_name="EduPilot",
             task_name=TASK_NAME,
             current_reward=0,
+            benchmark_reward=edupilot_benchmark if edupilot_benchmark else 0.0,
             history=[],
             task_error=False,
         )
@@ -104,6 +109,8 @@ class EdupilotEnvironment(Environment):
             message_length=0,
             done=False,
             reward=0.0,
+            success_ratio=0.0,
+            mean_performance=0.0,
             last_action_error=self._state.task_error,
         )
 
@@ -122,10 +129,11 @@ class EdupilotEnvironment(Environment):
         message = action.message
         length = len(message)
 
-        final_reward, observations = get_final_reward(message)
+        final_reward, observations = get_rewards(message)
 
-        self._state.current_reward = final_reward
         self._state.history.append({"msg_len": length, "final_reward": final_reward})
+
+        success_ratio, mean_performance = get_metrics(final_reward, edupilot_benchmark, self._state.history)
 
         if final_reward == -1:
             self._state.task_error = True
@@ -136,7 +144,9 @@ class EdupilotEnvironment(Environment):
             reward_observations=observations,
             done=False,
             reward=final_reward,
-            metadata={"original_message": message, "step": self._state.step_count},
+            success_ratio=success_ratio if success_ratio else 0.0,
+            mean_performance=mean_performance if mean_performance else 0.0,
+            last_action_error=self._state.task_error
         )
 
     @property
