@@ -48,8 +48,7 @@ import textwrap
 from io import BytesIO
 from pathlib import Path
 from typing import Dict, List, Optional
-
-import numpy as np
+from pydantic import BaseModel, Field
 
 try:
     from ..models import EdupilotAction, EdupilotObservation
@@ -101,13 +100,14 @@ ACTION_PATTERN = re.compile(r"[A-Za-z_]+\s*\(.*\)", re.DOTALL)
 SYSTEM_PROMPT = textwrap.dedent("""
     You are an intelligent agent and a structured data generator.
 
-    Your task is to produce a valid JSON object that strictly adheres to the provided schema.
+    Your task is to produce a valid JSON object that strictly adheres to the provided notification schema and notification instance.
 
     Instructions:
     - If the task is to create or transform data → output ONLY valid JSON.
 
     Rules:
     - Output ONLY valid JSON.
+    - This valid JSON has to in format that can be parsed programmatically.
     - Do not include explanations, comments, or extra text.
     - Follow the schema exactly (keys, nesting, and structure).
     - Preserve all provided values unless instructed otherwise.
@@ -115,12 +115,106 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - Never mix JSON and actions.
     - No explanations or extra text.
     - Follow the schema strictly when generating JSON.
-    - Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given schema. 
+    - Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given notification schema and notification instance.
     - Labels should be string and should not contain any link.
     - Convert deadline in hh:mm AM/PM format.
     - If unsure:
         - For JSON tasks → best-effort valid JSON
     """).strip()
+
+notification_schema = {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Notification",
+  "type": "object",
+  "required": ["notification"],
+  "properties": {
+    "notification": {
+      "type": "object",
+      "required": ["brand_name", "greetings", "message", "details"],
+      "properties": {
+        "brand_name": { "type": "string" },
+        "message": { "type": "string" },
+        "greetings": {
+          "type": "object",
+          "required": ["prefix", "username"],
+          "properties": {
+            "prefix": { "type": "string" },
+            "username": { "type": "string" }
+          }
+        },
+        "details": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["category", "type", "label", "value"],
+            "properties": {
+              "category": { 
+                "type": "string", 
+                "enum": ["main-details", "extra-details"] 
+              },
+              "type": { 
+                "type": "string",
+                "enum": [
+                  "assignment_title", 
+                  "deadline", 
+                  "lms_link", 
+                  "associated_lecture_link", 
+                  "youtube_lecture_link"
+                ]
+              },
+              "label": { "type": "string" },
+              "value": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+notification_instance = {
+  "notification": {
+    "brand_name": "Scaler School",
+    "greetings": {
+      "prefix": "Dear",
+      "username": "Mithilesh Nakade"
+    },
+    "message": "A new assignment has been released for you.",
+    "details": [
+      {
+        "category": "main-details",
+        "type": "assignment_title",
+        "label": "📘 Assignment Title:",
+        "value": "Faculty Session - Meta and Scaler OpenEnv Hackathon"
+      },
+      {
+        "category": "main-details",
+        "type": "deadline",
+        "label": "🗓 Deadline:",
+        "value": "Apr 9, 2026 at 11:59 PM"
+      },
+      {
+        "category": "extra-details",
+        "type": "lms_link",
+        "label": "🔗 LMS Link:",
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/"
+      },
+      {
+        "category": "extra-details",
+        "type": "associated_lecture_link",
+        "label": "associated lecture:",
+        "value": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/dashboard?utm_source=midfunnel&utm_medium=email&utm_campaign=registration_acknowledgement"
+      },
+      {
+        "category": "extra-details",
+        "type": "youtube_lecture_link",
+        "label": "Youtube link:",
+        "value": "https://www.youtube.com/watch?v=kkCNMz0Ptd8&t=1703s"
+      }
+    ]
+  }
+}
 
 
 class PromptContextModel(BaseModel):
@@ -195,28 +289,39 @@ def build_user_prompt(step: int, observation, prompt_context: PromptContextModel
         deadline: {prompt_context.deadline}
         associated lecture link: {prompt_context.associated_lecture_link}
         additional task: {prompt_context.additional_task}
-        Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given schema. 
+        Keep the values in 'extra-details' in the final JSON labels etc. as they are in the details section of given notification schema  and notification instance.
         Labels should be string and should not contain any link.
         Convert deadline in hh:mm AM/PM format.
-        Reply with exactly one EduPilot action json which adhers by given schema.
+        Convert the given instance in to valid JSON format that can be parsed programmatically.
+        Reply with exactly one EduPilot action json which adhers by given notification schema and notification instance.
         """).strip()
 
     prompt = textwrap.dedent(f"""
         Step: {step}
         Goal: {goal}
-        schema: {msg_schema}
+        Notification schema: {notification_schema}
+        Example instance: {notification_instance}
         Previous steps:
         {build_history_lines(history)}
         Last action error: {error_note}
         Current context: {context_text}
-        Reply with exactly one EduPilot action json which adhers by given schema.
+        Convert the given instance in to valid JSON format that can be parsed programmatically. 
+        Reply with exactly one EduPilot action json which adhers by given notification schema and notification instance.
         """).strip()
+
     return prompt
 
 
 def parse_model_action(response_text: str) -> str:
     if not response_text:
         return FALLBACK_ACTION
+
+    try:
+        response_text_json = json.loads(response_text)
+        if response_text_json:
+            return response_text_json
+    except json.JSONDecodeError:
+        pass
 
     lines = response_text.splitlines()
     for raw_line in lines:
