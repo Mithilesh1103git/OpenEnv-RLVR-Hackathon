@@ -11,7 +11,7 @@ The EduPilot environment is a simple test environment that echoes back messages.
 """
 
 from openenv.core.env_server.types import Action, Observation
-from pydantic import Field
+from pydantic import BaseModel, Field
 
 
 class EdupilotAction(Action):
@@ -35,5 +35,27 @@ class EdupilotObservation(Observation):
     reward_observations: list = Field(
         default=[], description="Observations for what was rewarded and by what"
     )
-    success_ratio: float = Field(default=0.0, description="Success ratio against the benchmark")
-    mean_performance: float = Field(default=0.0, description="Mean performance of the agent")
+    success_ratio: float = Field(
+        default=0.0, description="Success ratio against the benchmark"
+    )
+    mean_performance: float = Field(
+        default=0.0, description="Mean performance of the agent"
+    )
+
+
+class EdupilotRewards(BaseModel):
+    total_reward: float = Field(default=0.0, description="Total rewards collected")
+    reward_observations: list = Field(default={}, description="Observations for what was rewarded and by what")
+
+
+class EdupilotMetrics(BaseModel):
+    benchmark: float = Field(
+        default=0.0, description="Benchmark to evaluate results against"
+    )
+    current_reward: float = Field(default=0.0, description="Current total reward")
+    success_ratio: float = Field(
+        default=0.0, description="Success ratio against the benchmark"
+    )
+    mean_performance: float = Field(
+        default=0.0, description="Mean performance of the agent/model"
+    )

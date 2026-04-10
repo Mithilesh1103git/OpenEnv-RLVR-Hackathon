@@ -8,6 +8,12 @@ import requests
 from dotenv import dotenv_values, load_dotenv
 from jsonschema import Draft7Validator
 
+try:
+    from ..models import EdupilotRewards, EdupilotMetrics
+except ImportError:
+    from models import EdupilotRewards, EdupilotMetrics
+
+
 env_file_name = ".env"
 env_dir = Path(__file__).parent.parent.resolve()
 env_file_path = f"{env_dir}/{env_file_name}"
@@ -45,100 +51,117 @@ def parse_llm_response(message: str):
         "raw_values": [],
     }
 
-    root_dict_node = message["notification"]
-    if not root_dict_node:
-        return parsed_dict
+    root_dict_node = {}
+    try:
+        root_dict_node = message["notification"]
+        if not root_dict_node:
+            return parsed_dict
+    except:
+        pass
 
     sample_dict_keys = ["brand_name", "greetings", "message", "details"]
 
     for key in sample_dict_keys:
 
         if key == "brand_name":
-            main_key_node = root_dict_node[key]
-            if main_key_node:
-                parsed_dict["is_present"]["brand_name"] = True
-                parsed_dict["raw_values"].append({"brand_name": main_key_node})
-            if main_key_node == BRAND_NAME_ENV_VAR:
-                data_validation["brand_name"] = True
+            try:
+                main_key_node = root_dict_node[key]
+                if main_key_node:
+                    parsed_dict["is_present"]["brand_name"] = True
+                    parsed_dict["raw_values"].append({"brand_name": main_key_node})
+                if main_key_node == BRAND_NAME_ENV_VAR:
+                    data_validation["brand_name"] = True
+            except:
+                pass
 
         if key == "greetings":
-            main_key_node = root_dict_node[key]
-            if main_key_node:
-                parsed_dict["is_present"]["greetings"] = True
+            try:
+                main_key_node = root_dict_node[key]
+                if main_key_node:
+                    parsed_dict["is_present"]["greetings"] = True
 
-                greetings_prefix = main_key_node["prefix"]
-                if greetings_prefix:
-                    parsed_dict["is_present"]["greetings_prefix"] = True
-                    parsed_dict["raw_values"].append(
-                        {"greetings_prefix": greetings_prefix}
-                    )
+                    greetings_prefix = main_key_node["prefix"]
+                    if greetings_prefix:
+                        parsed_dict["is_present"]["greetings_prefix"] = True
+                        parsed_dict["raw_values"].append(
+                            {"greetings_prefix": greetings_prefix}
+                        )
 
-                greetings_username = main_key_node["username"]
-                if greetings_prefix:
-                    parsed_dict["is_present"]["greetings_username"] = True
-                    parsed_dict["raw_values"].append(
-                        {"greetings_username": greetings_username}
-                    )
+                    greetings_username = main_key_node["username"]
+                    if greetings_prefix:
+                        parsed_dict["is_present"]["greetings_username"] = True
+                        parsed_dict["raw_values"].append(
+                            {"greetings_username": greetings_username}
+                        )
+            except:
+                pass
 
         if key == "message":
-            main_key_node = root_dict_node[key]
-            if main_key_node:
-                parsed_dict["is_present"]["message"] = True
-                parsed_dict["raw_values"].append({"message": main_key_node})
-                if STATIC_MESSAGE_TEXT is not None and main_key_node.startswith(
-                    STATIC_MESSAGE_TEXT
-                ):
-                    data_validation["message"] = True
+            try:
+                main_key_node = root_dict_node[key]
+                if main_key_node:
+                    parsed_dict["is_present"]["message"] = True
+                    parsed_dict["raw_values"].append({"message": main_key_node})
+                    if STATIC_MESSAGE_TEXT is not None and main_key_node.startswith(
+                        STATIC_MESSAGE_TEXT
+                    ):
+                        data_validation["message"] = True
+            except:
+                pass
 
         if key == "details":
-            main_key_node = root_dict_node[key]
-            if main_key_node:
-                parsed_dict["is_present"]["details"] = True
+            try:
+                main_key_node = root_dict_node[key]
+                if main_key_node:
+                    parsed_dict["is_present"]["details"] = True
 
-                for detail in main_key_node:
+                    for detail in main_key_node:
 
-                    detail_detail_category = detail["category"]
-                    detail_type = detail["type"]
-                    detail_key = detail["label"]
-                    detail_value = detail["value"]
+                        detail_detail_category = detail["category"]
+                        detail_type = detail["type"]
+                        detail_key = detail["label"]
+                        detail_value = detail["value"]
 
-                    if detail_type == "assignment_title":
-                        parsed_dict["is_present"]["assignment_title"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                    if detail_type == "deadline":
-                        parsed_dict["is_present"]["deadline"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                    if detail_type == "lms_link":
-                        parsed_dict["is_present"]["lms_link"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                        if LMS_DOMAIN_URL is not None and detail_value.startswith(
-                            LMS_DOMAIN_URL
-                        ):
-                            data_validation[detail_type] = True
-                    if detail_type == "associated_lecture_link":
-                        parsed_dict["is_present"]["associated_lecture_link"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                        if LMS_DOMAIN_URL is not None and detail_value.startswith(
-                            LMS_DOMAIN_URL
-                        ):
-                            try:
-                                response = requests.head(detail_value, timeout=5)
-                                if response.status_code < 400:
-                                    data_validation[detail_type] = True
-                            except:
-                                data_validation[detail_type] = False
-                    if detail_type == "youtube_lecture_link":
-                        parsed_dict["is_present"]["youtube_lecture_link"] = True
-                        parsed_dict["raw_values"].append({detail_key: detail_value})
-                        if YOUTUBE_DOMAIN_URL is not None and detail_value.startswith(
-                            YOUTUBE_DOMAIN_URL
-                        ):
-                            try:
-                                response = requests.head(detail_value, timeout=5)
-                                if response.status_code < 400:
-                                    data_validation[detail_type] = True
-                            except:
-                                data_validation[detail_type] = False
+                        if detail_type == "assignment_title":
+                            parsed_dict["is_present"]["assignment_title"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                        if detail_type == "deadline":
+                            parsed_dict["is_present"]["deadline"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                        if detail_type == "lms_link":
+                            parsed_dict["is_present"]["lms_link"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                            if LMS_DOMAIN_URL is not None and detail_value.startswith(
+                                LMS_DOMAIN_URL
+                            ):
+                                data_validation[detail_type] = True
+                        if detail_type == "associated_lecture_link":
+                            parsed_dict["is_present"]["associated_lecture_link"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                            if LMS_DOMAIN_URL is not None and detail_value.startswith(
+                                LMS_DOMAIN_URL
+                            ):
+                                try:
+                                    response = requests.head(detail_value, timeout=5)
+                                    if response.status_code < 400:
+                                        data_validation[detail_type] = True
+                                except:
+                                    data_validation[detail_type] = False
+                        if detail_type == "youtube_lecture_link":
+                            parsed_dict["is_present"]["youtube_lecture_link"] = True
+                            parsed_dict["raw_values"].append({detail_key: detail_value})
+                            if (
+                                YOUTUBE_DOMAIN_URL is not None
+                                and detail_value.startswith(YOUTUBE_DOMAIN_URL)
+                            ):
+                                try:
+                                    response = requests.head(detail_value, timeout=5)
+                                    if response.status_code < 400:
+                                        data_validation[detail_type] = True
+                                except:
+                                    data_validation[detail_type] = False
+            except:
+                pass
 
     parsed_dict["data_validation"] = data_validation
 
@@ -198,17 +221,24 @@ def get_rewards(message: str):
         except jsonschema.exceptions.ValidationError:
             print("Schema validation failed.")
 
-    return final_reward, observations
+    return EdupilotRewards(total_reward=final_reward, reward_observations=observations)
 
 
 def get_metrics(final_reward: float, edupilot_benchmark: float, history: list):
     success_ratio, mean_performance = 0.0, 0.0
-    
+
     if final_reward and edupilot_benchmark:
-        success_ratio = final_reward / edupilot_benchmark
+        current_success_ratio = final_reward / edupilot_benchmark
 
     len_history = len(history)
-    if len_history>1:
-        mean_performance = sum([history[n]["final_reward"] for n in range(len_history)]) / len_history
+    if len_history > 1:
+        mean_performance = (
+            sum([history[n]["final_reward"] for n in range(len_history)]) / len_history
+        )
 
-    return success_ratio, mean_performance
+    return EdupilotMetrics(
+        benchmark=edupilot_benchmark,
+        current_reward=final_reward,
+        success_ratio=current_success_ratio,
+        mean_performance=mean_performance,
+    )

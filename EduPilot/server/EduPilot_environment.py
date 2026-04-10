@@ -20,21 +20,21 @@ from openenv.core.env_server.interfaces import Environment
 from openenv.core.env_server.types import State
 
 try:
-    from ..models import EdupilotAction, EdupilotObservation
+    from ..models import EdupilotAction, EdupilotMetrics, EdupilotRewards, EdupilotObservation
 except ImportError:
-    from models import EdupilotAction, EdupilotObservation
+    from models import EdupilotAction, EdupilotMetrics, EdupilotRewards, EdupilotObservation
 
 try:
     from .reward_collection import (
-        get_rewards,
         get_metrics,
+        get_rewards,
         parse_llm_response,
         reward_collection,
     )
 except ImportError:
     from server.reward_collection import (
-        get_rewards,
         get_metrics,
+        get_rewards,
         parse_llm_response,
         reward_collection,
     )
@@ -129,11 +129,13 @@ class EdupilotEnvironment(Environment):
         message = action.message
         length = len(message)
 
-        final_reward, observations = get_rewards(message)
+        rewards = get_rewards(message)
+        final_reward = rewards.total_reward
+        reward_observations = rewards.reward_observations
 
         self._state.history.append({"msg_len": length, "final_reward": final_reward})
 
-        success_ratio, mean_performance = get_metrics(final_reward, edupilot_benchmark, self._state.history)
+        metrics = get_metrics(final_reward, edupilot_benchmark, self._state.history)
 
         if final_reward == -1:
             self._state.task_error = True
@@ -141,12 +143,14 @@ class EdupilotEnvironment(Environment):
         return EdupilotObservation(
             echoed_message=json.dumps(message),
             message_length=length,
-            reward_observations=observations,
+            reward_observations=reward_observations,
             done=False,
             reward=final_reward,
-            success_ratio=success_ratio if success_ratio else 0.0,
-            mean_performance=mean_performance if mean_performance else 0.0,
-            last_action_error=self._state.task_error
+            success_ratio=metrics.success_ratio if metrics.success_ratio else 0.0,
+            mean_performance=(
+                metrics.mean_performance if metrics.mean_performance else 0.0
+            ),
+            last_action_error=self._state.task_error,
         )
 
     @property
