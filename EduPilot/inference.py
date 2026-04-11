@@ -415,24 +415,24 @@ async def main() -> None:
     """
     Main inference functions.
     """
-    # env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
-    env = await EdupilotEnv.from_docker_image(
-        image=LOCAL_IMAGE_NAME,
-        env_vars={
-            "BRAND_NAME": "Scaler School",
-            "LMS_LINK": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/",
-            "ENABLE_WEB_INTERFACE": "true",
-            "API_BASE_URL": "https://api.openai.com/v1",
-            "MODEL_NAME": "gpt-5.4-mini",
-            "LOCAL_IMAGE_NAME": "mithilesh1103/openenv-edupilot-mithilesh:latest",
-            "EDUPILOT_TASK_NAME": "EduPilot Notification Generation",
-            "BRAND_NAME": "Scaler School",
-            "STATIC_MESSAGE_TEXT": "A new assignment has been released for you.",
-            "LMS_DOMAIN_URL": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon",
-            "YOUTUBE_DOMAIN_URL": "https://www.youtube.com",
-            "EDUPILOT_BENCHMARK": "10.5",
-        },
-    )
+    env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
+    # env = await EdupilotEnv.from_docker_image(
+    #     image=LOCAL_IMAGE_NAME,
+    #     env_vars={
+    #         "BRAND_NAME": "Scaler School",
+    #         "LMS_LINK": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon/",
+    #         "ENABLE_WEB_INTERFACE": "true",
+    #         "API_BASE_URL": "https://api.openai.com/v1",
+    #         "MODEL_NAME": "gpt-5.4-mini",
+    #         "LOCAL_IMAGE_NAME": "mithilesh1103/openenv-edupilot-mithilesh:latest",
+    #         "EDUPILOT_TASK_NAME": "EduPilot Notification Generation",
+    #         "BRAND_NAME": "Scaler School",
+    #         "STATIC_MESSAGE_TEXT": "A new assignment has been released for you.",
+    #         "LMS_DOMAIN_URL": "https://www.scaler.com/school-of-technology/meta-pytorch-hackathon",
+    #         "YOUTUBE_DOMAIN_URL": "https://www.youtube.com",
+    #         "EDUPILOT_BENCHMARK": "10.5",
+    #     },
+    # )
 
     history: List[str] = []
     rewards: List[float] = []
