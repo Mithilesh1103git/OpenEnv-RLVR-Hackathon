@@ -415,7 +415,8 @@ async def main() -> None:
     """
     Main inference functions.
     """
-    env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
+    env = await EdupilotEnv(base_url="http://localhost:8000")
+    # env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
     # env = await EdupilotEnv.from_docker_image(
     #     image=LOCAL_IMAGE_NAME,
     #     env_vars={
