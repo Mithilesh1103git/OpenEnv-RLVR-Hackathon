@@ -429,7 +429,9 @@ async def fetch_env():
             "EDUPILOT_BENCHMARK": "10.5",
         },
     )
-    
+
+    return env
+
 
 async def main() -> None:
     """
