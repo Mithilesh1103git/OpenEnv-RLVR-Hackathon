@@ -411,8 +411,6 @@ def parse_model_action(response_text: str) -> str:
     return FALLBACK_ACTION
 
 
-<<<<<<< HEAD
-=======
 async def fetch_env():
     env = await EdupilotEnv.from_env(
         "man1103/edupilot-openenv-docker",
@@ -432,15 +430,13 @@ async def fetch_env():
         },
     )
     
-    return env
-
 
 async def main() -> None:
     """
     Main inference functions.
     """
     env = await fetch_env()
-    # env = await EdupilotEnv.from_env("Man1103/edupilot-openenv-docker", message_timeout_s=300)
+    # env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
     # env = await EdupilotEnv.from_docker_image(
     #     image=LOCAL_IMAGE_NAME,
     #     env_vars={
