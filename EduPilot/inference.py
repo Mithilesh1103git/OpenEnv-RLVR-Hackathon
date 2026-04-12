@@ -64,7 +64,6 @@ import random
 
 from dotenv import dotenv_values, load_dotenv
 from openai import OpenAI
-from PIL import Image
 
 env_file_name = ".env"
 env_dir = Path(__file__).parent.resolve()
@@ -438,7 +437,11 @@ async def main() -> None:
     Main inference functions.
     """
     env = await fetch_env()
+<<<<<<< HEAD
     # env = await EdupilotEnv.from_env("man1103-edupilot-openenv-docker", message_timeout_s=300)
+=======
+    # env = await EdupilotEnv.from_env("Man1103/edupilot-openenv-docker", message_timeout_s=300)
+>>>>>>> main
     # env = await EdupilotEnv.from_docker_image(
     #     image=LOCAL_IMAGE_NAME,
     #     env_vars={
@@ -498,7 +501,7 @@ async def main() -> None:
                 )
             except Exception as exc:  # noqa: BLE001
                 response_text = FALLBACK_ACTION
-                print(exe)
+                print(exc)
                 if DEBUG:
                     print(f"[DEBUG] Model request failed: {exc}", flush=True)
 
