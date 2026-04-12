@@ -64,7 +64,6 @@ import random
 
 from dotenv import dotenv_values, load_dotenv
 from openai import OpenAI
-from PIL import Image
 
 env_file_name = ".env"
 env_dir = Path(__file__).parent.resolve()
@@ -498,7 +497,7 @@ async def main() -> None:
                 )
             except Exception as exc:  # noqa: BLE001
                 response_text = FALLBACK_ACTION
-                print(exe)
+                print(exc)
                 if DEBUG:
                     print(f"[DEBUG] Model request failed: {exc}", flush=True)
 
