@@ -1,37 +1,45 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
-# ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest
-ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest@sha256:3e478c17bcdee6969218c03d0c1986bdb0db9abd4e763a9180b9014b3dde211a
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+# Multi-stage build using openenv-base
+# This Dockerfile is flexible and works for both:
+# - In-repo environments (with local OpenEnv sources)
+# - Standalone environments (with openenv from PyPI/Git)
+# The build script (openenv build) handles context detection and sets appropriate build args.
+
+ARG BASE_IMAGE=ghcr.io/meta-pytorch/openenv-base:latest
 FROM ${BASE_IMAGE} AS builder
 
 WORKDIR /app
 
-# Ensure git and curl are available
+# Ensure git is available (required for installing dependencies from VCS)
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends git curl && \
+    apt-get install -y --no-install-recommends git && \
     rm -rf /var/lib/apt/lists/*
 
+# Build argument to control whether we're building standalone or in-repo
 ARG BUILD_MODE=in-repo
-ARG ENV_NAME=EduPilot
+ARG ENV_NAME=openenv_testenv_1
 
-# Ensure uv is available
-RUN if ! command -v uv >/dev/null 2>&1; then \
-        curl -LsSf https://astral.sh | sh && \
-        cp /root/.local/bin/uv /usr/local/bin/uv && \
-        cp /root/.local/bin/uvx /usr/local/bin/uvx; \
-    fi
-
-# Set explicit venv path to avoid conflicts with copied folders
-ENV UV_PROJECT_ENVIRONMENT="/app/.venv"
-# Optimization: Don't let uv download its own python if the base image has it
-ENV UV_PYTHON_DOWNLOADS=never
-
-# Copy environment code
+# Copy environment code (always at root of build context)
 COPY . /app/env
+
+# For in-repo builds, openenv is already vendored in the build context
+# For standalone builds, openenv will be installed via pyproject.toml
 WORKDIR /app/env
 
-# RUN /app/env/pre-validation-script.sh https://huggingface.co/spaces/Man1103/edupilot-openenv-docker
-
-# Install dependencies (Step 1: Just the lockfile/pyproject for caching)
+# Ensure uv is available (for local builds where base image lacks it)
+RUN if ! command -v uv >/dev/null 2>&1; then \
+        curl -LsSf https://astral.sh/uv/install.sh | sh && \
+        mv /root/.local/bin/uv /usr/local/bin/uv && \
+        mv /root/.local/bin/uvx /usr/local/bin/uvx; \
+    fi
+    
+# Install dependencies using uv sync
+# If uv.lock exists, use it; otherwise resolve on the fly
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -f uv.lock ]; then \
         uv sync --frozen --no-install-project --no-editable; \
@@ -39,7 +47,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
         uv sync --no-install-project --no-editable; \
     fi
 
-# Install project (Step 2: Full sync)
 RUN --mount=type=cache,target=/root/.cache/uv \
     if [ -f uv.lock ]; then \
         uv sync --frozen --no-editable; \
@@ -52,22 +59,22 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-# Copy the virtual environment and app code from builder
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/env /app
+# Copy the virtual environment from builder
+COPY --from=builder /app/env/.venv /app/.venv
+
+# Copy the environment code
+COPY --from=builder /app/env /app/env
 
 # Set PATH to use the virtual environment
 ENV PATH="/app/.venv/bin:$PATH"
+
 # Set PYTHONPATH so imports work correctly
-ENV PYTHONPATH="/app:$PYTHONPATH"
+ENV PYTHONPATH="/app/env:$PYTHONPATH"
 
-ENV ENABLE_WEB_INTERFACE="true"
-
+# Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the FastAPI server
-# CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
-
-ENV PYTHONPATH=/app
-CMD ["uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+# The module path is constructed to work with the /app/env structure
+CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
